@@ -16,20 +16,21 @@ class sections(models.Model):
     
 class TimeSlots(models.Model):
     tpdf = models.ForeignKey(Pdf,on_delete=models.CASCADE,related_name='time_slots')
-    start_time = models.DateTimeField(null=True,blank=True)
-    end_time = models.DateTimeField(null=True,blank=True)
+    date = models.DateField(null=True,blank=True)
+    start_time = models.TimeField(null=True,blank=True)
+    end_time = models.TimeField(null=True,blank=True)
     section = models.OneToOneField(sections,on_delete=models.CASCADE,related_name='time_slot',null=True,blank=True)
     time_status = models.BooleanField(default=False)
 
     def __str__(self):
+        start_str = self.start_time.strftime('%I:%M %p') if self.start_time else "--:--"
+        end_str = self.end_time.strftime('%I:%M %p') if self.end_time else "--:--"
+
         if self.start_time and self.end_time:
-            return f"{self.start_time.strftime('%Y-%b-%d %I:%M %p')} - {self.end_time.strftime('%Y-%b-%d %I:%M %p')}"
-        elif self.start_time:
-            return self.start_time.strftime('%Y-%b-%d %I:%M %p')
-        elif self.end_time:
-            return self.end_time.strftime('%Y-%b-%d %I:%M %p')
-        else:
-            return "--:--"
+            return f"{start_str} - {end_str}"
+        return start_str if self.start_time else end_str
+    class Meta:
+        ordering = ['date', 'start_time']
 
     
     
