@@ -1,0 +1,12 @@
+
+.main{
+    position:relative;
+}
+.nav-bar{
+    display: flex;
+    gap: 1rem;
+    position: absolute;
+    right:0;
+    text-decoration: none;
+    
+}

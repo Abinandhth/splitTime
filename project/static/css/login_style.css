@@ -1,0 +1,46 @@
+body{
+    background-image: url('../images/test1.gif');
+}
+.wrapper{
+    width: 800;
+    border:  2px solid rgb(250,250,250,.2);
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    translate: -50% -50%;
+    background: transparent;
+    backdrop-filter: blur(1px);
+}
+.wrapper h1{
+    text-align: center;
+}
+.wrapper .input-box{
+    height: 50px;
+    width: 500px;
+    padding-left: 6px;
+    border-radius: 5px;
+   }
+.wrapper .input-box input{
+    height: 35px;
+    width: 480px;
+    border-radius:10px ;
+    padding-left: 10px;
+    border:  2px solid rgb(250,250,250,.2);
+    background: transparent;
+    backdrop-filter: blur(4px);
+}
+.wrapper .forget-password a{
+    text-decoration: none;
+    padding-left:10px ;
+}
+.wrapper  .btn{
+    padding-left: 50%;
+
+  }
+
+.wrapper .sign-in{
+    display:flex;
+    justify-content: right;
+    padding-right:3px; 
+    align-items:center; 
+}

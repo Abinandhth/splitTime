@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>home</title>
+    <link rel="stylesheet" href="{% static 'css/home_style.css' %}">
+    <style>
+        /* Modal styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 1001;
+            max-width: 500px;
+            width: 90%;
+        }
+        .timeslot-button {
+            margin: 2px;
+            padding: 5px;
+            border: 1px solid #007BFF;
+            background-color: white;
+            cursor: pointer;
+        }
+        .timeslot-button.active {
+            background-color: #007BFF;
+            color: white;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+        }
+        .study-plan-details {
+            margin-top: 15px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            display: none;
+        }
+        .form-group {
+            margin-bottom: 10px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .settings-section {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 5px;
+        }
+        .timeslot-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 8px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="home">
+        <div class="dashboard">
+            <div class="dp">
+                <img src="{% static 'images/logo.jpg' %}" alt="Profile Picture">
+                <h1>Username</h1>
+            </div>
+            <a href="#" class="dashboard-btn">Sections</a>
+            <a href="#" class="dashboard-btn">Sections</a>
+            <a href="#" class="dashboard-btn">Sections</a>
+        </div>
+        <div class="main-content">
+            <nav class="nav-bar">
+                <div class="logo">
+                    <h1>splittime</h1>
+                </div>
+                <ul class="nav-links">
+                    <li><a href="{% url 'main' %}">Home</a></li>
+                    <li><a href="#">About</a></li>
+                    <li><a href="{% url 'logout' %}">Log Out</a></li>
+                </ul>
+            </nav>
+            <div class="content">
+                <h2>Welcome to the Dashboard</h2>
+                <p>Your content goes here...</p>
+
+                <!-- Combined File Upload and Study Plan Form -->
+                <form method="post" enctype="multipart/form-data" id="uploadForm">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="file-upload" class="upload-btn">+</label>
+                        <input type="file" name="document" id="file-upload" accept="application/pdf" style="display: none;">
+                        <span id="file-name">No file selected</span>
+                    </div>
+                    
+                    <!-- Study Plan Details (initially hidden) -->
+                    <div class="study-plan-details" id="studyPlanDetails">
+                        <h3>Study Plan Details</h3>
+                        
+                        <div class="form-group">
+                            <label for="pdfTitle">PDF Title:</label>
+                            <input type="text" id="pdfTitle" name="pdfTitle" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="deadline">Deadline:</label>
+                            <input type="date" id="deadline" name="deadline" required>
+                        </div>
+                        
+                        
+                        
+                        <div class="form-group">
+                            <label>Select Time Slots:</label>
+                            <div id="timeslot-container" class="timeslot-container"></div>
+                            <!-- Hidden input to store selected time slots -->
+                            <input type="hidden" id="selected_timeslots" name="selected_timeslots" value="">
+                        </div>
+                    </div>
+                    
+                    <button type="submit" id="upload-btn" disabled>Upload & Create Study Plan</button>
+                </form>
+
+                <form method="post" enctype="multipart/form-data" >
+                    {% csrf_token%}
+                    <div class="settings-section">
+                        <h4>Time Settings</h4>
+                        <div class="form-group">
+                            <label for="min">Min:</label>
+                            <input type="number" id="min" name="min">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="max">Max:</label>
+                            <input type="number" id="max" name="max">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="duration">Duration (minutes):</label>
+                            <input type="time" id="default-duration" name="duration">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="from">From:</label>
+                            <input type="time" id="from" name="from">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="to">To:</label>
+                            <input type="time" id="to" name="to">
+                        </div>
+                    </div>
+                    <button type="submit" id="settingsbtn" action="{% url 'home' %}">Enter</button>
+                </form>
+
+                <!-- Hidden elements to store values fetched from Django -->
+                <input type="hidden" id="from-time" value="{{ from_time }}">
+                <input type="hidden" id="to-time" value="{{ to_time }}">
+                <input type="hidden" id="duration" value="{{ duration }}">
+
+
+                <!-- Uploaded Files List -->
+                <h2>Uploaded Files</h2>
+                <ul>
+                    {% for pdf in pdfs %}
+                        {% if pdf.pdf_file %}
+                            <li>
+                                <a href="{{ pdf.pdf_file.url }}" target="_blank">{{ pdf.title }}</a>
+                                <div class="action-buttons">
+                                    <form method="post" action="{% url 'pdf_delete' pdf.pk %}" style="display: inline;">
+                                        {% csrf_token %}
+                                        <button type="submit">Delete</button>
+                                    </form>
+                                </div>
+                            </li>
+                        {% else %}
+                            <li>No file available</li>
+                        {% endif %}
+                    {% empty %}
+                        <li>No PDFs yet</li>
+                    {% endfor %}
+                </ul>                            
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // File upload handling
+        const fileUpload = document.getElementById("file-upload");
+        const fileNameSpan = document.getElementById("file-name");
+        const uploadBtn = document.getElementById("upload-btn");
+        const studyPlanDetails = document.getElementById("studyPlanDetails");
+        
+        fileUpload.addEventListener("change", function() {
+            if (this.files.length) {
+                fileNameSpan.textContent = this.files[0].name;
+                uploadBtn.disabled = false;
+                
+                // Show study plan details
+                studyPlanDetails.style.display = "block";
+                
+                // Generate time slots after form is visible
+                setTimeout(generateTimeSlots, 100);
+            } else {
+                fileNameSpan.textContent = "No file selected";
+                uploadBtn.disabled = true;
+                studyPlanDetails.style.display = "none";
+            }
+        });
+
+        // Function to format time in 12-hour format with am/pm
+        function formatTime(hours, minutes) {
+            const period = hours >= 12 ? 'pm' : 'am';
+            const displayHours = hours % 12 || 12; // Convert 0 to 12 for 12 AM
+            return `${displayHours}:${minutes.toString().padStart(2, '0')}${period}`;
+        }
+        
+        // Function to generate time slots dynamically using settings from the database
+        function generateTimeSlots() {
+            const fromTime = document.getElementById('from-time').value;  // Read from hidden input
+            const toTime = document.getElementById('to-time').value;  // Read from hidden input
+            const duration = document.getElementById('duration').value;  // Read from hidden input
+    
+            const [fromHours, fromMinutes] = fromTime.split(':').map(Number);
+            const [toHours, toMinutes] = toTime.split(':').map(Number);
+
+            const startMinutes = (fromHours * 60) + fromMinutes;
+            const endMinutes = (toHours * 60) + toMinutes;
+            const durationMinutes = parseInt(duration);
+
+            const timeslotContainer = document.getElementById('timeslot-container');
+            timeslotContainer.innerHTML = ''; // Clear existing slots
+
+            for (let time = startMinutes; time < endMinutes; time += durationMinutes) {
+                const startHour = Math.floor(time / 60);
+                const startMinute = time % 60;
+
+                const endTime = time + durationMinutes;
+                const endHour = Math.floor(endTime / 60);
+                const endMinute = endTime % 60;
+
+                if (endTime > endMinutes) break;
+
+                const formattedStartTime = formatTime(startHour, startMinute);
+                const formattedEndTime = formatTime(endHour, endMinute);
+
+                const start24h = `${String(startHour).padStart(2, '0')}:${String(startMinute).padStart(2, '0')}`;
+                const end24h = `${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`;
+
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'timeslot-button';
+                button.dataset.startTime = start24h;
+                button.dataset.endTime = end24h;
+                button.dataset.displayStart = formattedStartTime;
+                button.dataset.displayEnd = formattedEndTime;
+                button.textContent = `${formattedStartTime}-${formattedEndTime}`;
+
+                button.addEventListener('click', function() {
+                    this.classList.toggle('active');
+                    updateSelectedTimeslots();
+                });
+
+                timeslotContainer.appendChild(button);
+            }
+        }       
+
+        // Call the function when the page loads
+        document.addEventListener("DOMContentLoaded", generateTimeSlots);
+
+        
+        // Function to update the hidden input with selected time slots
+        function updateSelectedTimeslots() {
+            const selectedButtons = document.querySelectorAll('.timeslot-button.active');
+            const selectedSlots = Array.from(selectedButtons).map(button => {
+                return {
+                    start_time: button.dataset.startTime,
+                    end_time: button.dataset.endTime,
+                    display_start: button.dataset.displayStart,
+                    display_end: button.dataset.displayEnd
+                };
+            });
+            
+            // Store as JSON in hidden input
+            document.getElementById('selected_timeslots').value = JSON.stringify(selectedSlots);
+        }
+        
+        // Generate time slots when time settings change
+        document.getElementById('from').addEventListener('change', generateTimeSlots);
+        document.getElementById('to').addEventListener('change', generateTimeSlots);
+        document.getElementById('duration').addEventListener('change', generateTimeSlots);
+        
+        // Handle form submission
+        document.getElementById("uploadForm").onsubmit = function(e) {
+            // Make sure selected_timeslots is updated one final time
+            updateSelectedTimeslots();
+            
+            // Form will submit naturally (no preventDefault)
+        };
+    </script>
+</body>
+</html>

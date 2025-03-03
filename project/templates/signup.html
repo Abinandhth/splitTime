@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In</title></head>
+    <link  rel="stylesheet" href="{% static 'css/signup_style.css'%}">
+<body>
+    <div class="sign-in-container">
+        <h2>Sign In</h2>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" placeholder="Enter your username" required>
+            </div>
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" placeholder="Enter your email" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" placeholder="Enter your password" required>
+            </div>
+            <button type="submit">Sign In</button>
+        </form>
+        <p>
+            {% if user %}
+            New user created :{{ user.username }}
+            {% endif%}
+        </p>
+        <p style="background-color: red;">
+            {% if error_message %}
+            {{error_message}}
+            {% endif%}
+        </p>
+        <a href="{% url 'login' %}">Account Already Exits:Login </a>
+    </div>
+</body>
+</html>

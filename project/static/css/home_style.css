@@ -1,0 +1,159 @@
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+}
+
+.home {
+    display: flex;
+    min-height: 100vh;
+    background-color: white;
+}
+
+.dashboard {
+    width: 250px;
+    background-color: #333;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+}
+
+.dp {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.dp img {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+}
+
+.dp h1 {
+    font-size: 1.2em;
+    margin: 10px 0 0;
+}
+
+.dashboard-btn {
+    display: block;
+    width: 100%;
+    text-align: center;
+    padding: 10px;
+    margin: 5px 0;
+    background-color: #555;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: background-color 0.3s ease-in-out;
+}
+
+.dashboard-btn:hover {
+    background-color: #777;
+}
+
+.main-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.nav-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 30px;
+    background-color: #222;
+    color: #fff;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    flex-wrap: wrap;
+}
+
+.nav-links {
+    list-style: none;
+    display: flex;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+}
+
+.nav-links li {
+    display: inline-block;
+}
+
+.nav-links a {
+    color: #fff;
+    text-decoration: none;
+    font-weight: bold;
+    transition: color 0.3s ease-in-out;
+}
+
+.nav-links a:hover {
+    color: rgb(232, 87, 87);
+}
+
+.content {
+    padding: 20px;
+    color: #333;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 70px);
+    position: relative;
+}
+
+.upload-btn {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background-color: #555;
+    color: #fff;
+    font-size: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.3s ease-in-out;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    margin-top: 20px;
+}
+
+.upload-btn:hover {
+    background-color: rgb(232, 87, 87);
+}
+
+@media (max-width: 768px) {
+    .home {
+        flex-direction: column;
+    }
+
+    .dashboard {
+        width: 100%;
+        flex-direction: row;
+        justify-content: space-around;
+    }
+
+    .dashboard-btn {
+        width: auto;
+        padding: 8px 12px;
+    }
+
+    .main-content {
+        width: 100%;
+    }
+
+    .nav-bar {
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .nav-links {
+        flex-direction: column;
+        gap: 10px;
+    }
+}
