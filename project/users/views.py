@@ -5,7 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.files.storage import FileSystemStorage
 from .models import Pdf,Settings
 from datetime import datetime, date, timedelta
-from pdf.models import TimeSlots,sections
+from pdf.models import TimeSlots
 import fitz
 from django.core.files.base import ContentFile
 
@@ -90,8 +90,7 @@ def home(request):
 
                 split_and_store_pdf(pdf_obj,total_time)  
 
-                assign_sections_to_timeslots(pdf_obj)
-
+                
             except json.JSONDecodeError:
                 print("Error decoding selected time slots JSON")
             except ValueError as e:
@@ -143,7 +142,7 @@ def home(request):
         if date_str not in dates_dict:
             dates_dict[date_str]= []
         
-        section_url = slot.section.section_file.url if slot.section and slot.section.section_file else None
+        section_url = slot.section_file.url if slot.section_file else None
 
 
         slot_str = f"{slot.start_time.strftime('%I:%M%p')}-{slot.end_time.strftime('%I:%M%p')}"
@@ -198,7 +197,10 @@ def split_and_store_pdf(pdf_obj,num_splits):
         return
     pages_per_split = total_pages // num_splits
 
-    for i in range(num_splits):
+    section_list = list(TimeSlots.objects.filter(tpdf=pdf_obj).order_by('date', 'start_time'))
+    print(section_list)
+
+    for section,i in zip(section_list,range(num_splits)):
         start_page = i * pages_per_split
         end_page = start_page + pages_per_split
 
@@ -212,21 +214,11 @@ def split_and_store_pdf(pdf_obj,num_splits):
         pdf_bytes = new_pdf.write()
         new_pdf.close()
 
-        section_obj = sections(pdf=pdf_obj)
 
-        section_obj.section_file.save(
+        section.section_file.save(
             f"section_{i+1}.pdf",
             ContentFile(pdf_bytes)
         )
 
-        section_obj.save()
+        section.save()
 
-def assign_sections_to_timeslots(pdf_obj):
-    sections_list = list(sections.objects.filter(pdf=pdf_obj).order_by('id'))
-
-    timeslots_list = list(TimeSlots.objects.filter(section__isnull=True,tpdf=pdf_obj).order_by('date','start_time'))
-
-    for timeslot,section in zip(timeslots_list,sections_list):
-        timeslot.section = section
-        timeslot.save()
-    print("succes assigned")       
