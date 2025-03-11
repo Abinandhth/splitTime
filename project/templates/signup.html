@@ -4,38 +4,125 @@
     {% load static %}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign In</title></head>
-    <link  rel="stylesheet" href="{% static 'css/signup_style.css'%}">
+    <title>Sign Up</title>
+    <style>
+        /* Global Styles */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            /* Softer gradient background */
+            background: linear-gradient(to right, #004ff9 , #000000);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        /* Main Container */
+        .container {
+            background: #fff;
+            width: 380px;
+            max-width: 90%;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+            /* Remove center text alignment */
+            display: flex;
+            flex-direction: column;
+        }
+        /* Heading */
+        h2 {
+            margin-bottom: 20px;
+            color: #444;
+            font-weight: 600;
+            text-align: left;  /* Left-aligned heading */
+        }
+        /* Form */
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+        input[type="text"],
+        input[type="email"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        input[type="password"]:focus {
+            border-color: #ffa07a; /* Lighter, friendlier focus color */
+            outline: none;
+        }
+        /* Button */
+        .btn {
+            padding: 12px;
+            margin-top: 5px;
+            background: #ffa07a; /* Soft orange */
+            border: none;
+            color: #fff;
+            font-size: 18px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .btn:hover {
+            background: #ff8c66; /* Slightly darker on hover */
+        }
+        /* Error Message */
+        .error-message {
+            color: #d9534f; /* Friendlier red tone */
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: left;
+        }
+        /* Login Link */
+        .login-link {
+            margin-top: 20px;
+            font-size: 14px;
+            text-align: left;
+        }
+        .login-link a {
+            color: #ffa07a;
+            text-decoration: none;
+            transition: color 0.3s;
+            font-weight: bold;
+        }
+        .login-link a:hover {
+            color: #ff8c66;
+            text-decoration: underline;
+        }
+    </style>
+</head>
 <body>
-    <div class="sign-in-container">
-        <h2>Sign In</h2>
-        <form method="post" enctype="multipart/form-data">
+    <div class="container">
+        <h2>Sign Up</h2>
+        {% if error_message %}
+        <p class="error-message">An account with this email already exists.</p>
+        {% endif %}
+        
+        <form method="POST">
             {% csrf_token %}
-            <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" name="username" placeholder="Enter your username" required>
-            </div>
-            <div class="form-group">
-                <label for="email">Email</label>
-                <input type="email" id="email" name="email" placeholder="Enter your email" required>
-            </div>
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" placeholder="Enter your password" required>
-            </div>
-            <button type="submit">Sign In</button>
+            <input type="text" name="username" placeholder="Username" required>
+            <input type="email" name="email" placeholder="Email" required>
+            <input type="password" name="password" placeholder="Password" required>
+            <button type="submit" class="btn">Register</button>
         </form>
-        <p>
-            {% if user %}
-            New user created :{{ user.username }}
-            {% endif%}
+        
+        <p class="login-link">
+            Already have an account? 
+            <a href="{% url 'login' %}">Login here</a>
         </p>
-        <p style="background-color: red;">
-            {% if error_message %}
-            {{error_message}}
-            {% endif%}
-        </p>
-        <a href="{% url 'login' %}">Account Already Exits:Login </a>
     </div>
 </body>
 </html>

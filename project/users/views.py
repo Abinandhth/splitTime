@@ -2,12 +2,14 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, logout as authlogout, login as authlogin
 from django.contrib.auth.decorators import login_required
-from django.core.files.storage import FileSystemStorage
 from .models import Pdf,Settings
-from datetime import datetime, date, timedelta
+from datetime import datetime, timedelta
 from pdf.models import TimeSlots
 import fitz
 from django.core.files.base import ContentFile
+from django.db.models import Q
+import os
+from io import BytesIO
 
 def main(request):
     return render(request, 'main.html')
@@ -33,11 +35,52 @@ def logout(request):
 
 @login_required(login_url='/login/')
 def home(request):
-
+    timeslots = TimeSlots.objects.none()
     # Ensure user settings exist
     user_settings, created = Settings.objects.get_or_create(
         user_settings=request.user,
     )
+
+    now = datetime.now()  # Uses your PC's local time
+    current_date = now.date()
+    current_time = now.time()
+    print(current_date)
+    print(current_time)
+
+    datetime_before = TimeSlots.objects.filter(time_status=False).filter(
+        Q(date__lt=current_date) |  # Past dates
+        Q(date=current_date, end_time__lt=current_time)  # Today's past times
+    )
+
+    datetime_before.update(time_status=True)# Bulk update instead of looping
+    tpdfs = Pdf.objects.filter(user=request.user)
+
+
+    for pdf in tpdfs:
+
+        time_count = TimeSlots.objects.filter(tpdf=pdf,time_status=False).count()
+        print(time_count)
+
+        section_count = TimeSlots.objects.filter(tpdf=pdf,section_status=False).count()
+        print(section_count)
+
+        if time_count < section_count:
+            timeslots = TimeSlots.objects.filter(tpdf=pdf,section_status=False)
+            merged_pdf = merge_pdfs_in_memory(timeslots)
+            section_list = list(TimeSlots.objects.filter(tpdf=pdf,time_status=False).order_by('date', 'start_time'))
+            split_merged_pdf(merged_pdf,time_count,section_list)
+        # elif section_count < time_count:
+        #     timeslots = TimeSlots.objects.filter(tpdf=pdf,time_status=False).filter(Q(date__gt=now.date()) | Q(date=now.date(), start_time__gte=now.time())).order_by('date', 'start_time')
+        #     merged_pdf = merge_pdfs_in_memory(timeslots)
+        #     section_list = list(timeslots)
+        #     num_splits = timeslots.count()  # Get the count
+        #     if num_splits > 0:  # Ensure it's not zero
+        #         split_merged_pdf(merged_pdf, num_splits, section_list)
+        #     else:
+        #         print("No available TimeSlots with time_status=False to assign split PDFs.")
+
+        
+
 
     if request.method == 'POST':
         # File upload handling
@@ -85,10 +128,14 @@ def home(request):
                         # Move to the next day
                     current_date += timedelta(days=1)
 
-                total_time = TimeSlots.objects.filter(tpdf__title=pdf_title).count()
+                total_time = TimeSlots.objects.filter(tpdf=pdf_obj).count()
                 print(total_time)
 
-                split_and_store_pdf(pdf_obj,total_time)  
+                user_settings = Settings.objects.get(user_settings=request.user)
+                min_section = user_settings.min
+
+
+                split_and_store_pdf(pdf_obj,total_time,min_section)  
 
                 
             except json.JSONDecodeError:
@@ -134,7 +181,7 @@ def home(request):
     pdfs = Pdf.objects.filter(user=request.user)
 
     schedules = []
-    time_slots = TimeSlots.objects.all().order_by('date','start_time')
+    time_slots = TimeSlots.objects.filter(tpdf__in=pdfs).order_by('date','start_time')
 
     dates_dict = {}
     for slot in time_slots:
@@ -146,7 +193,13 @@ def home(request):
 
 
         slot_str = f"{slot.start_time.strftime('%I:%M%p')}-{slot.end_time.strftime('%I:%M%p')}"
-        slot_entry = {'time': slot_str,'section_url':section_url}
+        slot_entry = {
+            'time': slot_str,
+            'section_url':section_url,
+            'section_status':slot.section_status,
+            'time_status':slot.time_status,
+            'id':slot.pk
+            }
         dates_dict[date_str].append(slot_entry)
 
     dates_list = [{'date': date, 'slots': slots}
@@ -187,38 +240,110 @@ def pdf_delete(request,pk):
     return redirect('home')
 
 
-def split_and_store_pdf(pdf_obj,num_splits):
+def split_and_store_pdf(pdf_obj,num_splits,min):
     pdf_path = pdf_obj.pdf_file.path
     doc = fitz.open(pdf_path)
     total_pages = len(doc)
 
-    if num_splits == 0 or num_splits > total_pages:
+    while num_splits <= min or num_splits > total_pages:
         print("error:invalid no of splits")
-        return
+        num_splits = (num_splits//2)
+        if num_splits % 2 != 0:
+            num_splits +=1
+
     pages_per_split = total_pages // num_splits
 
     section_list = list(TimeSlots.objects.filter(tpdf=pdf_obj).order_by('date', 'start_time'))
-    print(section_list)
 
-    for section,i in zip(section_list,range(num_splits)):
-        start_page = i * pages_per_split
+    for i, section in enumerate(section_list):
+        # Determine which split this section should belong to (cycling through first num_splits)
+        split_index = i % num_splits  
+
+        start_page = split_index * pages_per_split
         end_page = start_page + pages_per_split
 
-        if i == num_splits -1:
-            end_page = total_pages
+        if split_index == num_splits - 1:
+            end_page = total_pages  # Ensure last split gets remaining pages
 
+        # Create a new PDF for this section
         new_pdf = fitz.open()
-        for page_num in range(start_page,end_page):
-            new_pdf.insert_pdf(doc,from_page=page_num,to_page=page_num)
+        for page_num in range(start_page, end_page):
+            new_pdf.insert_pdf(doc, from_page=page_num, to_page=page_num)
 
         pdf_bytes = new_pdf.write()
         new_pdf.close()
 
-
+        # Save the split PDF to the current section
         section.section_file.save(
-            f"section_{i+1}.pdf",
+            f"section_{split_index+1}.pdf",  # Naming based on split_index (repeating)
             ContentFile(pdf_bytes)
         )
+
+        section.save()
+
+def section_complete(request,slot_id):
+    if request.method == 'POST':
+        slot = TimeSlots.objects.get(pk=slot_id)
+        slot.section_status = True
+        slot.save()
+    return redirect('home')
+
+
+
+
+def merge_pdfs_in_memory(timeslots):
+    """Merges PDFs from TimeSlots where section_status is False."""
+    pdf_merger = fitz.open()
+    
+    # Fetch all relevant TimeSlots instances
+
+    if not timeslots.exists():
+        print("No matching TimeSlots with section_status=False found!")
+        return None
+
+    # Merge PDFs
+    for slot in timeslots:
+        if slot.section_file:  # Ensure file exists
+            pdf_merger.insert_pdf(fitz.open(stream=slot.section_file.read(), filetype="pdf"))
+
+    print("PDFs merged in memory.")
+    return pdf_merger
+
+
+
+
+def split_merged_pdf(merged_pdf,num_splits,section_list):
+    doc = merged_pdf
+    total_pages = len(doc)
+    
+    pages_per_split = total_pages // num_splits
+
+    for i, section in enumerate(section_list):
+    # Determine which split this section should belong to (cycling through first num_splits)
+        split_index = i % num_splits  
+
+        start_page = split_index * pages_per_split
+        end_page = start_page + pages_per_split
+
+        if split_index == num_splits - 1:
+            end_page = total_pages  # Ensure last split gets remaining pages
+
+        # Create a new PDF for this section
+        new_pdf = fitz.open()
+        for page_num in range(start_page, end_page):
+            new_pdf.insert_pdf(doc, from_page=page_num, to_page=page_num)
+
+        pdf_bytes = new_pdf.write()
+        new_pdf.close()
+
+        # Save the split PDF to the current section
+        section.section_file.save(
+            f"section_{split_index+1}.pdf",  # Naming based on split_index (repeating)
+            ContentFile(pdf_bytes)
+        )
+
+        section.section_status =False
+    
 
         section.save()
 

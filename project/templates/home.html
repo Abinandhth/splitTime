@@ -219,9 +219,27 @@
                                     {% else %}
                                         - No section available
                                     {% endif %}
+                        
+                                    {% if not slot.section_status and not first_incomplete_shown %}
+                                        {% if slot.time_status and not slot.section_status %}
+                                            <span>not completed</span>
+                                        {% else %}
+                                            <form method="post" action="{% url 'section_complete' slot.id %}">
+                                                {% csrf_token %}
+                                                <button type="submit" id="Complete">Complete</button>
+                                            </form>
+                                            {% comment %} Ensure button is shown only once {% endcomment %}
+                                            {% with first_incomplete_shown=True %}
+                                            {% endwith %}
+                                        {% endif %}
+                                    {% elif slot.section_status %}
+                                        <span>✅ Completed</span>
+                                    {% endif %}
+                                    
                                 </li>
                             {% endfor %}
                         </ul>
+                        
                         
                     </div>
                 {% endfor %}
