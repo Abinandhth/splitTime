@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sections</title>
+</head>
+<body>
+
+    <a href="{% url 'home' %}">back</a>
+<div>
+<div>
+<div>
+    <!-- Uploaded Files List -->
+    <h2>Uploaded Files</h2>
+    <ul>
+        {% for pdf in pdfs %}
+            {% if pdf.pdf_file %}
+                <li>
+                    <a href="{{ pdf.pdf_file.url }}" target="_blank">{{ pdf.title }}</a>
+                    <h4>{{ pdf.title }}</h4>
+                    <h4>{{ pdf.deadline }}</h4>
+                    <h4>Total no of time slots:{{ pdf.total_noof_timeslots }}</h4>
+                    <div class="action-buttons">
+                        <form method="post" action="{% url 'pdf_delete' pdf.pk %}" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit">Delete</button>
+                        </form>
+
+                        <button class="btn upload-btn" onclick="openRescheduleForm('{{ pdf.pk }}')">Reschedule</button>
+
+                        <!-- Hidden Reschedule Form -->
+                        <div id="reschedule-form-{{ pdf.pk }}" style="display: none; margin-top: 10px; border: 1px solid #ccc; padding: 10px;">
+                            <form method="post" action="{% url 'pdf_reschedule' pdf.pk %}">
+                                {% csrf_token %}
+
+                                <label for="pdfTitle-{{ pdf.pk }}">PDF Title:</label>
+                                <input type="text" id="pdfTitle-{{ pdf.pk }}" name="pdfTitle" value="{{ pdf.title }}" required>
+
+                                <label for="deadline-{{ pdf.pk }}">Deadline:</label>
+                                <input type="date" id="deadline-{{ pdf.pk }}" name="deadline" value="{{ pdf.deadline|date:'Y-m-d' }}" required>
+                                
+                                <div class="form-group">
+                                    <label>Select Time Slots:</label>
+                                    <div id="timeslot-container-{{ pdf.pk }}" class="timeslot-container"></div>
+                                    <input type="hidden" id="selected_timeslots-{{ pdf.pk }}" name="selected_timeslots" value="">
+                                </div>
+                                                                            
+                                <button type="submit">Update</button>
+                                <button type="button" onclick="closeRescheduleForm('{{ pdf.pk }}')">Cancel</button>
+                            </form>
+                            <!-- Settings Icon -->
+                            <div class="settings-icon" onclick="openSettingsPopup(event)">
+                                <i class='bx bxs-cog'></i>
+                            </div>
+                        </div>
+                    </div>
+                </li>
+            {% else %}
+                <li>No file available</li>
+            {% endif %}
+        {% empty %}
+            <li>No PDFs yet</li>
+        {% endfor %}
+    </ul>                            
+</div>
+</div>
+</div>
+
+<!-- Settings Popup Window -->
+<div id="settings-popup" class="settings-popup">
+    <div class="settings-popup-content">
+        <span class="close-btn" onclick="closeSettingsPopup()">&times;</span>
+        <h3>Settings</h3>
+        <form method="post" id="settingsForm" action="{% url 'pdf_reschedule' 0 %}">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="min">Min:</label>
+                <input type="number" id="min" name="min">
+            </div>
+            <div class="form-group">
+                <label for="max">Max:</label>
+                <input type="number" id="max" name="max">
+            </div>
+            <div class="form-group">
+                <label for="duration">Duration (minutes):</label>
+                <input type="number" id="default-duration" name="duration">
+            </div>
+            <div class="form-group">
+                <label for="from">From:</label>
+                <input type="time" id="from" name="from">
+            </div>
+            <div class="form-group">
+                <label for="to">To:</label>
+                <input type="time" id="to" name="to">
+            </div>
+            <button type="submit" id="settingsbtn">Enter</button>
+        </form>
+    </div>
+</div>
+
+<!-- Hidden inputs for time settings -->
+<input type="hidden" id="from-time" value="{{ from_time }}">
+<input type="hidden" id="to-time" value="{{ to_time }}">
+<input type="hidden" id="duration" value="{{ duration }}">
+
+
+    <script>
+        function openRescheduleForm(slotId) {
+            document.getElementById('reschedule-form-' + slotId).style.display = 'block';
+            // Generate timeslots for this specific form
+            generateTimeSlotsForPdf(slotId);
+        }
+    
+        function closeRescheduleForm(slotId) {
+            document.getElementById('reschedule-form-' + slotId).style.display = 'none';
+        }
+
+        
+    // Function to open the settings popup
+    function openSettingsPopup(event) {
+        const settingsPopup = document.getElementById('settings-popup');
+        const settingsIcon = event.target.closest('.settings-icon');
+
+        // Position the settings popup near the settings icon
+        const iconRect = settingsIcon.getBoundingClientRect();
+        settingsPopup.style.top = `${iconRect.bottom + window.scrollY}px`;
+        settingsPopup.style.left = `${iconRect.left + window.scrollX}px`;
+
+        // Show the settings popup with animation
+        settingsPopup.style.display = 'block';
+        settingsPopup.classList.add('popup-animate');
+    }
+
+    // Function to close the settings popup
+    function closeSettingsPopup() {
+        const settingsPopup = document.getElementById('settings-popup');
+        settingsPopup.style.display = 'none';
+        settingsPopup.classList.remove('popup-animate');
+    }
+
+    // Function to format time in 12-hour format with am/pm
+    function formatTime(hours, minutes) {
+        const period = hours >= 12 ? 'pm' : 'am';
+        const displayHours = hours % 12 || 12; // Convert 0 to 12 for 12 AM
+        return `${displayHours}:${minutes.toString().padStart(2, '0')}${period}`;
+    }
+
+    // Function to generate time slots for a specific PDF
+    function generateTimeSlotsForPdf(pdfId) {
+        const fromTime = document.getElementById('from-time').value;
+        const toTime = document.getElementById('to-time').value;
+        const duration = document.getElementById('duration').value;
+
+        const [fromHours, fromMinutes] = fromTime.split(':').map(Number);
+        const [toHours, toMinutes] = toTime.split(':').map(Number);
+
+        const startMinutes = (fromHours * 60) + fromMinutes;
+        const endMinutes = (toHours * 60) + toMinutes;
+        const durationMinutes = parseInt(duration);
+
+        const timeslotContainer = document.getElementById('timeslot-container-' + pdfId);
+        timeslotContainer.innerHTML = ''; // Clear existing slots
+
+        for (let time = startMinutes; time < endMinutes; time += durationMinutes) {
+            const startHour = Math.floor(time / 60);
+            const startMinute = time % 60;
+
+            const endTime = time + durationMinutes;
+            const endHour = Math.floor(endTime / 60);
+            const endMinute = endTime % 60;
+
+            if (endTime > endMinutes) break;
+
+            const formattedStartTime = formatTime(startHour, startMinute);
+            const formattedEndTime = formatTime(endHour, endMinute);
+
+            const start24h = `${String(startHour).padStart(2, '0')}:${String(startMinute).padStart(2, '0')}`;
+            const end24h = `${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`;
+
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'timeslot-button';
+            button.dataset.startTime = start24h;
+            button.dataset.endTime = end24h;
+            button.dataset.displayStart = formattedStartTime;
+            button.dataset.displayEnd = formattedEndTime;
+            button.textContent = `${formattedStartTime}-${formattedEndTime}`;
+
+            button.addEventListener('click', function() {
+                this.classList.toggle('active');
+                updateSelectedTimeslots(pdfId);
+            });
+
+            timeslotContainer.appendChild(button);
+        }
+    }
+
+    // Function to update the hidden input with selected time slots for a specific PDF
+    function updateSelectedTimeslots(pdfId) {
+        const selectedButtons = document.querySelectorAll(`#timeslot-container-${pdfId} .timeslot-button.active`);
+        const selectedSlots = Array.from(selectedButtons).map(button => {
+            return {
+                start_time: button.dataset.startTime,
+                end_time: button.dataset.endTime,
+                display_start: button.dataset.displayStart,
+                display_end: button.dataset.displayEnd
+            };
+        });
+
+        // Store as JSON in hidden input
+        document.getElementById(`selected_timeslots-${pdfId}`).value = JSON.stringify(selectedSlots);
+    }
+
+    // Make sure form submissions update the hidden input with selected time slots
+    document.addEventListener('DOMContentLoaded', function() {
+        // Find all forms inside reschedule divs
+        const rescheduleForms = document.querySelectorAll('[id^="reschedule-form-"] form');
+        
+        rescheduleForms.forEach(form => {
+            form.addEventListener('submit', function(event) {
+                // Get the PDF ID from the form's action URL
+                const pdfId = this.action.split('/').pop();
+                
+                // Make sure to update the selected timeslots before submitting
+                updateSelectedTimeslots(pdfId);
+            });
+        });
+
+        // Handle settings form submission
+        document.getElementById('settingsForm').addEventListener('submit', function() {
+            // Form will submit naturally, just close the popup
+            closeSettingsPopup();
+        });
+    });
+
+    // Handle time setting changes
+    document.getElementById('from').addEventListener('change', function() {
+        document.getElementById('from-time').value = this.value;
+    });
+
+    document.getElementById('to').addEventListener('change', function() {
+        document.getElementById('to-time').value = this.value;
+    });
+
+    document.getElementById('default-duration').addEventListener('change', function() {
+        document.getElementById('duration').value = this.value;
+    });
+    </script>
+</body>
+</html>

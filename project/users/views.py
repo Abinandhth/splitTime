@@ -64,7 +64,7 @@ def home(request):
         section_count = TimeSlots.objects.filter(tpdf=pdf,section_status=False).count()
         print(section_count)
 
-        if time_count < section_count:
+        if time_count < section_count and time_count>0:
             timeslots = TimeSlots.objects.filter(tpdf=pdf,section_status=False)
             merged_pdf = merge_pdfs_in_memory(timeslots)
             section_list = list(TimeSlots.objects.filter(tpdf=pdf,time_status=False).order_by('date', 'start_time'))
@@ -134,6 +134,8 @@ def home(request):
                 user_settings = Settings.objects.get(user_settings=request.user)
                 min_section = user_settings.min
 
+                pdf_obj.total_noof_timeslots = total_time
+                pdf_obj.save()
 
                 split_and_store_pdf(pdf_obj,total_time,min_section)  
 
@@ -175,45 +177,14 @@ def home(request):
             user_settings.save()
 
             return redirect('home')
-       
 
-    # Retrieve PDFs uploaded by the user
-    pdfs = Pdf.objects.filter(user=request.user)
-
-    schedules = []
-    time_slots = TimeSlots.objects.filter(tpdf__in=pdfs).order_by('date','start_time')
-
-    dates_dict = {}
-    for slot in time_slots:
-        date_str = slot.date.strftime('%d/%m/%Y')
-        if date_str not in dates_dict:
-            dates_dict[date_str]= []
-        
-        section_url = slot.section_file.url if slot.section_file else None
-
-
-        slot_str = f"{slot.start_time.strftime('%I:%M%p')}-{slot.end_time.strftime('%I:%M%p')}"
-        slot_entry = {
-            'time': slot_str,
-            'section_url':section_url,
-            'section_status':slot.section_status,
-            'time_status':slot.time_status,
-            'id':slot.pk
-            }
-        dates_dict[date_str].append(slot_entry)
-
-    dates_list = [{'date': date, 'slots': slots}
-            for date, slots in sorted(dates_dict.items())
-    ]
-
-    schedules.append({'dates':dates_list})
+    username = request.user.username.upper() if request.user.is_authenticated else "Guest"
 
     return render(request, 'home.html', {
-        'pdfs': pdfs,
         'from_time': user_settings.from_time.strftime('%H:%M'),
         'to_time': user_settings.to_time.strftime('%H:%M'),
         'duration': user_settings.duration.total_seconds() // 60, 
-        'schedules':schedules
+        "username": username
     })
 
 
@@ -237,7 +208,7 @@ def pdf_delete(request,pk):
     if request.method == 'POST':
         pdf= Pdf.objects.get(pk=pk)
         pdf.delete()
-    return redirect('home')
+    return redirect('sections')
 
 
 def split_and_store_pdf(pdf_obj,num_splits,min):
@@ -285,8 +256,9 @@ def section_complete(request,slot_id):
     if request.method == 'POST':
         slot = TimeSlots.objects.get(pk=slot_id)
         slot.section_status = True
+        slot.time_status = True
         slot.save()
-    return redirect('home')
+    return redirect('schedules')
 
 
 
@@ -305,7 +277,10 @@ def merge_pdfs_in_memory(timeslots):
     for slot in timeslots:
         if slot.section_file:  # Ensure file exists
             pdf_merger.insert_pdf(fitz.open(stream=slot.section_file.read(), filetype="pdf"))
-
+        if slot.time_status:
+            slot.section_status = True
+            slot.not_complete = True
+            slot.save()
     print("PDFs merged in memory.")
     return pdf_merger
 

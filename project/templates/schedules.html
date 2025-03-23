@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schedules</title>
+</head>
+<body>
+    <a href="{% url 'home' %}">back</a>
+    <!-- Add this to your home.html template -->
+    <div class="schedules-container">
+        <h2>Schedules for 
+            <form method="GET" style="display: inline-block;">
+                <input type="date" 
+                       name="date" 
+                       value="{{ selected_date }}"
+                       onchange="this.form.submit()"
+                       style="font-size: 1.2rem; padding: 5px;">
+            </form>
+        </h2>
+    
+        {% for schedule in schedules %}
+            <div class="schedule-item">
+                <h3>{{ schedule.pdf_name }}</h3>
+                {% for day in schedule.dates %}
+                    <div class="schedule-day">
+                        <h4>{{ day.date }}</h4>
+                        <ul>
+                            {% for slot in day.slots %}
+                                <li>
+                                    {{ slot.time }}
+                                    {% if slot.section_url %}
+                                        - <a href="{{ slot.section_url }}" target="_blank">View Section</a>
+                                    {% else %}
+                                        - No section available
+                                    {% endif %}
+
+                                    {% if slot.not_complete %}
+                                        <span>not completed</span>
+                                    {% elif not slot.section_status  %}
+                                        <form method="post" action="{% url 'section_complete' slot.id %}">
+                                            {% csrf_token %}
+                                            <button type="submit">Complete</button>
+                                        </form>
+
+                                        <button onclick="openRescheduleForm('{{ slot.id }}')">Reschedule</button>
+
+                                        <!-- Hidden Reschedule Form -->
+                                        <div id="reschedule-form-{{ slot.id }}" style="display: none; margin-top: 10px; border: 1px solid #ccc; padding: 10px;">
+                                            <form method="post" action="{% url 'reschedule_schedule' slot.id %}">
+                                                {% csrf_token %}
+                                                <label>From Time:</label>
+                                                <input type="time" name="from_time" required>
+                                                
+                                                <label>To Time:</label>
+                                                <input type="time" name="to_time" required>
+                                                                                            
+                                                <button type="submit">Update</button>
+                                                <button type="button" onclick="closeRescheduleForm( '{{ slot.id }}' )">Cancel</button>
+                                            </form>
+                                        </div>
+                                    {% elif slot.section_status %}
+                                        <span>✅ Completed</span>
+                                       
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+
+                        </ul>
+                    </div>
+                {% endfor %}
+            </div>
+        {% empty %}
+            <p>No schedules available for selected date</p>
+        {% endfor %}
+    </div>
+
+     <script>
+        function openRescheduleForm(slotId) {
+            document.getElementById('reschedule-form-' + slotId).style.display = 'block';
+        }
+        
+        function closeRescheduleForm(slotId) {
+            document.getElementById('reschedule-form-' + slotId).style.display = 'none';
+        }
+    </script>
+</body>
+</html>

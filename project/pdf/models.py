@@ -10,6 +10,7 @@ class TimeSlots(models.Model):
     section_file = models.FileField(upload_to='uploads/sections', null=True, blank=True)
     section_status = models.BooleanField(default=False)
     time_status = models.BooleanField(default=False)
+    not_complete = models.BooleanField(default=False)
 
     def __str__(self):
         if self.section_file:

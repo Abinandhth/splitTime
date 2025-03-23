@@ -4,364 +4,290 @@
     {% load static %}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>home</title>
-    <link rel="stylesheet" href="{% static 'css/home_style.css' %}">
-    <style>
-        /* Modal styles */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-        }
-        .modal {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
-            z-index: 1001;
-            max-width: 500px;
-            width: 90%;
-        }
-        .timeslot-button {
-            margin: 2px;
-            padding: 5px;
-            border: 1px solid #007BFF;
-            background-color: white;
-            cursor: pointer;
-        }
-        .timeslot-button.active {
-            background-color: #007BFF;
-            color: white;
-        }
-        .action-buttons {
-            display: flex;
-            gap: 5px;
-        }
-        .study-plan-details {
-            margin-top: 15px;
-            padding: 15px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            display: none;
-        }
-        .form-group {
-            margin-bottom: 10px;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-        }
-        .settings-section {
-            margin-top: 15px;
-            padding: 10px;
-            background-color: #f5f5f5;
-            border-radius: 5px;
-        }
-        .timeslot-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 8px;
-            margin-top: 10px;
-        }
-    </style>
+    <title>Home Page</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+    <link  rel="stylesheet" href="{% static 'css/home_style.css' %}">
+
 </head>
 <body>
-    <div class="home">
-        <div class="dashboard">
-            <div class="dp">
-                <img src="{% static 'images/logo.jpg' %}" alt="Profile Picture">
-                <h1>Username</h1>
-            </div>
-            <a href="#" class="dashboard-btn">Sections</a>
-            <a href="#" class="dashboard-btn">Sections</a>
-            <a href="#" class="dashboard-btn">Sections</a>
+<div class="home">
+    <nav class="nav-bar">
+        <h2>splitime</h2>
+        <ul class="nav-links">
+            <li><a href="{% url 'main' %}">Home</a></li>
+            <li><a href="#">About</a></li>
+            <li><a href="{% url 'logout' %}">Log out</a></li>
+        </ul>
+    </nav>
+    <div class="card">
+        <video class="card_video" autoplay loop style="width: 100%; height:600px; object-fit: cover;"> 
+            <source src="{% static 'video/bg2.mp4' %}" type="video/mp4">
+          Your browser does not support the video tag.
+        </video>
+        <div class="card_txt">
+            <h1>Welcome {{ username }}</h1>        
         </div>
-        <div class="main-content">
-            <nav class="nav-bar">
-                <div class="logo">
-                    <h1>splittime</h1>
+    </div>
+    <div class="content">
+        <div class="c1">
+            <!-- Calendar Check Button -->
+            <a href="{% url 'sections' %}" class="btn nav-btn">
+                <i class='bx bxs-calendar-check bx-tada'></i>
+            </a>            
+            <!-- File Upload Button -->
+            <button class="btn upload-btn" onclick="openPopup()">
+                <i class='bx bxs-file-plus bx-tada' ></i>
+            </button>
+            <!-- Calendar Edit Button -->
+            <a href="{% url 'schedules' %}" class="btn nav-btn">
+                <i class='bx bxs-calendar-edit bx-tada' ></i>
+            </a>
+        </div>
+        <div class="c2">
+            <!-- Notification Button -->
+            <button class="btn nav-btn" onclick="window.location.href='#'">
+                <i class='bx bxs-notification bx-tada'></i>
+            </button>
+        </div>                    
+    </div> 
+</div>
+
+<!-- Main Popup Window -->
+<div id="popup" class="popup">
+    <div class="popup-content">
+        <span class="close-btn" onclick="closePopup()">&times;</span>
+        <form method="post" enctype="multipart/form-data" id="uploadForm">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="file-upload" class="upload-label">+</label>
+                <input type="file" name="document" id="file-upload" accept="application/pdf" style="display: none;">
+                <span id="file-name">No file selected</span>
+            </div>
+            <div class="study-plan-details" id="studyPlanDetails">
+                <h3>Study Plan Details</h3>
+                <div class="form-group">
+                    <label for="pdfTitle">PDF Title:</label>
+                    <input type="text" id="pdfTitle" name="pdfTitle" required>
                 </div>
-                <ul class="nav-links">
-                    <li><a href="{% url 'main' %}">Home</a></li>
-                    <li><a href="#">About</a></li>
-                    <li><a href="{% url 'logout' %}">Log Out</a></li>
-                </ul>
-            </nav>
-            <div class="content">
-                <h2>Welcome to the Dashboard</h2>
-                <p>Your content goes here...</p>
-
-                <!-- Combined File Upload and Study Plan Form -->
-                <form method="post" enctype="multipart/form-data" id="uploadForm">
-                    {% csrf_token %}
-                    <div class="form-group">
-                        <label for="file-upload" class="upload-btn">+</label>
-                        <input type="file" name="document" id="file-upload" accept="application/pdf" style="display: none;">
-                        <span id="file-name">No file selected</span>
-                    </div>
-                    
-                    <!-- Study Plan Details (initially hidden) -->
-                    <div class="study-plan-details" id="studyPlanDetails">
-                        <h3>Study Plan Details</h3>
-                        
-                        <div class="form-group">
-                            <label for="pdfTitle">PDF Title:</label>
-                            <input type="text" id="pdfTitle" name="pdfTitle" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="deadline">Deadline:</label>
-                            <input type="date" id="deadline" name="deadline" required>
-                        </div>
-                        
-                        
-                        
-                        <div class="form-group">
-                            <label>Select Time Slots:</label>
-                            <div id="timeslot-container" class="timeslot-container"></div>
-                            <!-- Hidden input to store selected time slots -->
-                            <input type="hidden" id="selected_timeslots" name="selected_timeslots" value="">
-                        </div>
-                    </div>
-                    
-                    <button type="submit" id="upload-btn" disabled>Upload & Create Study Plan</button>
-                </form>
-
-                <form method="post" enctype="multipart/form-data" >
-                    {% csrf_token%}
-                    <div class="settings-section">
-                        <h4>Time Settings</h4>
-                        <div class="form-group">
-                            <label for="min">Min:</label>
-                            <input type="number" id="min" name="min">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="max">Max:</label>
-                            <input type="number" id="max" name="max">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="duration">Duration (minutes):</label>
-                            <input type="number" id="default-duration" name="duration">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="from">From:</label>
-                            <input type="time" id="from" name="from">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="to">To:</label>
-                            <input type="time" id="to" name="to">
-                        </div>
-                    </div>
-                    <button type="submit" id="settingsbtn" action="{% url 'home' %}">Enter</button>
-                </form>
-
-                <!-- Hidden elements to store values fetched from Django -->
-                <input type="hidden" id="from-time" value="{{ from_time }}">
-                <input type="hidden" id="to-time" value="{{ to_time }}">
-                <input type="hidden" id="duration" value="{{ duration }}">
-
-
-                <!-- Uploaded Files List -->
-                <h2>Uploaded Files</h2>
-                <ul>
-                    {% for pdf in pdfs %}
-                        {% if pdf.pdf_file %}
-                            <li>
-                                <a href="{{ pdf.pdf_file.url }}" target="_blank">{{ pdf.title }}</a>
-                                <div class="action-buttons">
-                                    <form method="post" action="{% url 'pdf_delete' pdf.pk %}" style="display: inline;">
-                                        {% csrf_token %}
-                                        <button type="submit">Delete</button>
-                                    </form>
-                                </div>
-                            </li>
-                        {% else %}
-                            <li>No file available</li>
-                        {% endif %}
-                    {% empty %}
-                        <li>No PDFs yet</li>
-                    {% endfor %}
-                </ul>                            
+                <div class="form-group">
+                    <label for="deadline">Deadline:</label>
+                    <input type="date" id="deadline" name="deadline" required>
+                </div>
+                <div class="form-group">
+                    <label>Select Time Slots:</label>
+                    <div id="timeslot-container" class="timeslot-container"></div>
+                    <input type="hidden" id="selected_timeslots" name="selected_timeslots" value="">
+                </div>
             </div>
+            <button type="submit" id="upload-btn" disabled>Upload & Create Study Plan</button>
+        </form>
+        <!-- Settings Icon -->
+        <div class="settings-icon" onclick="openSettingsPopup(event)">
+            <i class='bx bxs-cog'></i>
         </div>
     </div>
-    
-    <!-- Add this to your home.html template -->
-    <div class="schedules-container">
-        <h2>Study Schedules</h2>
-        {% for schedule in schedules %}
-            <div class="schedule-item">
-                <h3>{{ schedule.title }}</h3>
-            
-                {% for day in schedule.dates %}
-                    <div class="schedule-day">
-                        <h4>{{ day.date }}</h4>
-                        <ul>
-                            {% for slot in day.slots %}
-                                <li>
-                                    {{ slot.time }}
-                                    {% if slot.section_url %}
-                                        - <a href="{{ slot.section_url }}" target="_blank">View Section</a>
-                                    {% else %}
-                                        - No section available
-                                    {% endif %}
-                        
-                                    {% if not slot.section_status and not first_incomplete_shown %}
-                                        {% if slot.time_status and not slot.section_status %}
-                                            <span>not completed</span>
-                                        {% else %}
-                                            <form method="post" action="{% url 'section_complete' slot.id %}">
-                                                {% csrf_token %}
-                                                <button type="submit" id="Complete">Complete</button>
-                                            </form>
-                                            {% comment %} Ensure button is shown only once {% endcomment %}
-                                            {% with first_incomplete_shown=True %}
-                                            {% endwith %}
-                                        {% endif %}
-                                    {% elif slot.section_status %}
-                                        <span>✅ Completed</span>
-                                    {% endif %}
-                                    
-                                </li>
-                            {% endfor %}
-                        </ul>
-                        
-                        
-                    </div>
-                {% endfor %}
-            </div>
-        {% empty %}
-            <p>No schedules available</p>
-        {% endfor %}
-    </div>
+</div>
 
-    <script>
-        // File upload handling
-        const fileUpload = document.getElementById("file-upload");
-        const fileNameSpan = document.getElementById("file-name");
-        const uploadBtn = document.getElementById("upload-btn");
-        const studyPlanDetails = document.getElementById("studyPlanDetails");
-        
-        fileUpload.addEventListener("change", function() {
-            if (this.files.length) {
-                fileNameSpan.textContent = this.files[0].name;
-                uploadBtn.disabled = false;
-                
-                // Show study plan details
-                studyPlanDetails.style.display = "block";
-                
-                // Generate time slots after form is visible
-                setTimeout(generateTimeSlots, 100);
-            } else {
-                fileNameSpan.textContent = "No file selected";
-                uploadBtn.disabled = true;
-                studyPlanDetails.style.display = "none";
-            }
+<!-- Settings Popup Window -->
+<div id="settings-popup" class="settings-popup">
+    <div class="settings-popup-content">
+        <span class="close-btn" onclick="closeSettingsPopup()">&times;</span>
+        <h3>Settings</h3>
+        <form method="post" id="settingsForm" >
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="min">Min:</label>
+                <input type="number" id="min" name="min">
+            </div>
+            <div class="form-group">
+                <label for="max">Max:</label>
+                <input type="number" id="max" name="max">
+            </div>
+            <div class="form-group">
+                <label for="duration">Duration (minutes):</label>
+                <input type="number" id="default-duration" name="duration">
+            </div>
+            <div class="form-group">
+                <label for="from">From:</label>
+                <input type="time" id="from" name="from">
+            </div>
+            <div class="form-group">
+                <label for="to">To:</label>
+                <input type="time" id="to" name="to">
+            </div>
+            <button type="submit" id="settingsbtn">Enter</button>
+        </form>
+    </div>
+</div>
+
+<!-- Hidden inputs for time settings -->
+<input type="hidden" id="from-time" value="{{ from_time }}">
+<input type="hidden" id="to-time" value="{{ to_time }}">
+<input type="hidden" id="duration" value="{{ duration }}">
+
+<script>
+    // Function to open the main popup
+    function openPopup() {
+        document.getElementById('popup').style.display = 'flex';
+    }
+
+    // Function to close the main popup
+    function closePopup() {
+        document.getElementById('popup').style.display = 'none';
+    }
+
+    // Function to open the settings popup
+    function openSettingsPopup(event) {
+        const settingsPopup = document.getElementById('settings-popup');
+        const settingsIcon = event.target.closest('.settings-icon');
+
+        // Position the settings popup near the settings icon
+        const iconRect = settingsIcon.getBoundingClientRect();
+        settingsPopup.style.top = `${iconRect.bottom + window.scrollY}px`;
+        settingsPopup.style.left = `${iconRect.left + window.scrollX}px`;
+
+        // Show the settings popup with animation
+        settingsPopup.style.display = 'block';
+        settingsPopup.classList.add('popup-animate');
+
+        // Blur the background
+        document.getElementById('popup').classList.add('blur-background');
+    }
+
+    // Function to close the settings popup
+    function closeSettingsPopup() {
+        const settingsPopup = document.getElementById('settings-popup');
+        settingsPopup.style.display = 'none';
+        settingsPopup.classList.remove('popup-animate');
+
+        // Remove blur from the background
+        document.getElementById('popup').classList.remove('blur-background');
+    }
+
+    // Function to handle settings form submission
+    function handleSettingsSubmit(event) {
+        event.preventDefault(); // Prevent form submission
+
+        // Get values from the settings form
+        // const fromTime = document.getElementById('from').value;
+        // const toTime = document.getElementById('to').value;
+        // const duration = document.getElementById('duration').value;
+
+        // // Store values in hidden inputs (for use in the main popup)
+        // document.getElementById('from-time').value = fromTime;
+        // document.getElementById('to-time').value = toTime;
+        // document.getElementById('duration').value = duration;
+
+        // Close the settings popup
+        closeSettingsPopup();
+
+        // // Generate time slots in the main popup
+        // generateTimeSlots();
+    }
+
+    // Function to format time in 12-hour format with am/pm
+    function formatTime(hours, minutes) {
+        const period = hours >= 12 ? 'pm' : 'am';
+        const displayHours = hours % 12 || 12; // Convert 0 to 12 for 12 AM
+        return `${displayHours}:${minutes.toString().padStart(2, '0')}${period}`;
+    }
+
+    // Function to generate time slots dynamically
+    function generateTimeSlots() {
+        const fromTime = document.getElementById('from-time').value;  // Read from hidden input
+        const toTime = document.getElementById('to-time').value;  // Read from hidden input
+        const duration = document.getElementById('duration').value;  // Read from hidden input
+
+        const [fromHours, fromMinutes] = fromTime.split(':').map(Number);
+        const [toHours, toMinutes] = toTime.split(':').map(Number);
+
+        const startMinutes = (fromHours * 60) + fromMinutes;
+        const endMinutes = (toHours * 60) + toMinutes;
+        const durationMinutes = parseInt(duration);
+
+        const timeslotContainer = document.getElementById('timeslot-container');
+        timeslotContainer.innerHTML = ''; // Clear existing slots
+
+        for (let time = startMinutes; time < endMinutes; time += durationMinutes) {
+            const startHour = Math.floor(time / 60);
+            const startMinute = time % 60;
+
+            const endTime = time + durationMinutes;
+            const endHour = Math.floor(endTime / 60);
+            const endMinute = endTime % 60;
+
+            if (endTime > endMinutes) break;
+
+            const formattedStartTime = formatTime(startHour, startMinute);
+            const formattedEndTime = formatTime(endHour, endMinute);
+
+            const start24h = `${String(startHour).padStart(2, '0')}:${String(startMinute).padStart(2, '0')}`;
+            const end24h = `${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`;
+
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'timeslot-button';
+            button.dataset.startTime = start24h;
+            button.dataset.endTime = end24h;
+            button.dataset.displayStart = formattedStartTime;
+            button.dataset.displayEnd = formattedEndTime;
+            button.textContent = `${formattedStartTime}-${formattedEndTime}`;
+
+            button.addEventListener('click', function() {
+                this.classList.toggle('active');
+                updateSelectedTimeslots();
+            });
+
+            timeslotContainer.appendChild(button);
+        }
+    }
+
+    // // Call the function when the page loads
+    document.addEventListener("DOMContentLoaded", generateTimeSlots);
+
+    // Function to update the hidden input with selected time slots
+    function updateSelectedTimeslots() {
+        const selectedButtons = document.querySelectorAll('.timeslot-button.active');
+        const selectedSlots = Array.from(selectedButtons).map(button => {
+            return {
+                start_time: button.dataset.startTime,
+                end_time: button.dataset.endTime,
+                display_start: button.dataset.displayStart,
+                display_end: button.dataset.displayEnd
+            };
         });
 
-        // Function to format time in 12-hour format with am/pm
-        function formatTime(hours, minutes) {
-            const period = hours >= 12 ? 'pm' : 'am';
-            const displayHours = hours % 12 || 12; // Convert 0 to 12 for 12 AM
-            return `${displayHours}:${minutes.toString().padStart(2, '0')}${period}`;
-        }
+        // Store as JSON in hidden input
+        document.getElementById('selected_timeslots').value = JSON.stringify(selectedSlots);
+    }
+
+    // Handle file upload change
+    document.getElementById('file-upload').addEventListener('change', function(event) {
+        const fileName = event.target.files[0].name;
+        document.getElementById('file-name').textContent = fileName;
+        document.getElementById('upload-btn').disabled = false;
+
+        // Show study plan details
+        document.getElementById('studyPlanDetails').style.display = 'block';
+
+        // // Generate time slots after form is visible
+        // setTimeout(generateTimeSlots, 100);
+    });
+
+    // Generate time slots when time settings change
+    document.getElementById('from').addEventListener('change', generateTimeSlots);
+    document.getElementById('to').addEventListener('change', generateTimeSlots);
+    document.getElementById('duration').addEventListener('change', generateTimeSlots);
         
-        // Function to generate time slots dynamically using settings from the database
-        function generateTimeSlots() {
-            const fromTime = document.getElementById('from-time').value;  // Read from hidden input
-            const toTime = document.getElementById('to-time').value;  // Read from hidden input
-            const duration = document.getElementById('duration').value;  // Read from hidden input
+
+    // Handle main form submission
+    document.getElementById('uploadForm').onsubmit = function(e) {
+        // Make sure selected_timeslots is updated one final time
+        updateSelectedTimeslots();
     
-            const [fromHours, fromMinutes] = fromTime.split(':').map(Number);
-            const [toHours, toMinutes] = toTime.split(':').map(Number);
-
-            const startMinutes = (fromHours * 60) + fromMinutes;
-            const endMinutes = (toHours * 60) + toMinutes;
-            const durationMinutes = parseInt(duration);
-
-            const timeslotContainer = document.getElementById('timeslot-container');
-            timeslotContainer.innerHTML = ''; // Clear existing slots
-
-            for (let time = startMinutes; time < endMinutes; time += durationMinutes) {
-                const startHour = Math.floor(time / 60);
-                const startMinute = time % 60;
-
-                const endTime = time + durationMinutes;
-                const endHour = Math.floor(endTime / 60);
-                const endMinute = endTime % 60;
-
-                if (endTime > endMinutes) break;
-
-                const formattedStartTime = formatTime(startHour, startMinute);
-                const formattedEndTime = formatTime(endHour, endMinute);
-
-                const start24h = `${String(startHour).padStart(2, '0')}:${String(startMinute).padStart(2, '0')}`;
-                const end24h = `${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`;
-
-                const button = document.createElement('button');
-                button.type = 'button';
-                button.className = 'timeslot-button';
-                button.dataset.startTime = start24h;
-                button.dataset.endTime = end24h;
-                button.dataset.displayStart = formattedStartTime;
-                button.dataset.displayEnd = formattedEndTime;
-                button.textContent = `${formattedStartTime}-${formattedEndTime}`;
-
-                button.addEventListener('click', function() {
-                    this.classList.toggle('active');
-                    updateSelectedTimeslots();
-                });
-
-                timeslotContainer.appendChild(button);
-            }
-        }       
-
-        // Call the function when the page loads
-        document.addEventListener("DOMContentLoaded", generateTimeSlots);
-
-        
-        // Function to update the hidden input with selected time slots
-        function updateSelectedTimeslots() {
-            const selectedButtons = document.querySelectorAll('.timeslot-button.active');
-            const selectedSlots = Array.from(selectedButtons).map(button => {
-                return {
-                    start_time: button.dataset.startTime,
-                    end_time: button.dataset.endTime,
-                    display_start: button.dataset.displayStart,
-                    display_end: button.dataset.displayEnd
-                };
-            });
-            
-            // Store as JSON in hidden input
-            document.getElementById('selected_timeslots').value = JSON.stringify(selectedSlots);
-        }
-        
-        // Generate time slots when time settings change
-        document.getElementById('from').addEventListener('change', generateTimeSlots);
-        document.getElementById('to').addEventListener('change', generateTimeSlots);
-        document.getElementById('duration').addEventListener('change', generateTimeSlots);
-        
-        // Handle form submission
-        document.getElementById("uploadForm").onsubmit = function(e) {
-            // Make sure selected_timeslots is updated one final time
-            updateSelectedTimeslots();
-            
-            // Form will submit naturally (no preventDefault)
-        };
-    </script>
+        // Form will submit naturally (no preventDefault)
+    };
+</script>
 </body>
 </html>
