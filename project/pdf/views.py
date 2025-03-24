@@ -219,13 +219,14 @@ def split_and_store_pdf(merged_pdf,num_splits,min,pdf_obj):
     total_pages = len(doc)
 
 
-    while num_splits <= min or num_splits > total_pages:
+    if num_splits > total_pages:
         print("error:invalid no of splits")
         num_splits = (num_splits//2)
-        if num_splits % 2 != 0:
-            num_splits +=1
 
+    while total_pages//num_splits < min:
+        num_splits = (num_splits//2)
     pages_per_split = total_pages // num_splits
+
 
     section_list = list(TimeSlots.objects.filter(tpdf=pdf_obj,section_status=False).order_by('date', 'start_time'))
 
