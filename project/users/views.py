@@ -11,6 +11,7 @@ from django.db.models import Q
 import os
 from io import BytesIO
 
+
 def main(request):
     return render(request, 'main.html')
 
@@ -87,6 +88,7 @@ def home(request):
         uploaded_file = request.FILES.get('document')
         pdf_title = request.POST.get('pdfTitle')
         deadline = request.POST.get('deadline')
+        structured = request.POST.get('is_stretched')
 
         if uploaded_file:
 
@@ -94,7 +96,8 @@ def home(request):
                 pdf_file=uploaded_file,
                 user=request.user,
                 title=pdf_title,
-                deadline=deadline
+                deadline=deadline,
+                structured = structured,
             )
 
             selected_timeslots_json = request.POST.get('selected_timeslots', '')
@@ -137,7 +140,11 @@ def home(request):
                 pdf_obj.total_noof_timeslots = total_time
                 pdf_obj.save()
 
-                split_and_store_pdf(pdf_obj,total_time,min_section)  
+                if pdf_obj.structured:
+                    pdf_path = pdf_obj.pdf_file.path
+                    processed_pdf=process_pdf(pdf_path)
+                
+                split_and_store_pdf(pdf_obj,total_time,min_section,processed_pdf)  
 
                 
             except json.JSONDecodeError:
@@ -153,9 +160,9 @@ def home(request):
             if min_val and min_val.strip():
                 user_settings.min = int(min_val)
 
-            max_val = request.POST.get('max')
-            if max_val and max_val.strip():
-                user_settings.max = int(max_val)
+            # max_val = request.POST.get('max')
+            # if max_val and max_val.strip():
+            #     user_settings.max = int(max_val)
 
             duration_val = request.POST.get('duration')
             if duration_val and duration_val.strip():
@@ -211,19 +218,31 @@ def pdf_delete(request,pk):
     return redirect('sections')
 
 
-def split_and_store_pdf(pdf_obj,num_splits,min):
-    pdf_path = pdf_obj.pdf_file.path
-    doc = fitz.open(pdf_path)
-    total_pages = len(doc)
+def split_and_store_pdf(pdf_obj,num_splits,min,processed_pdf):
+    if pdf_obj.structured:
+        # Convert bytes to a PyMuPDF Document
+        doc = fitz.open("pdf", processed_pdf)
+        total_pages=len(doc)
+    else:
+        pdf_path = pdf_obj.pdf_file.path
+        doc = fitz.open(pdf_path)
+        total_pages = len(doc)
 
+    i=1
+    revision = 0
     if num_splits > total_pages:
         print("error:invalid no of splits")
         num_splits = (num_splits//2)
+        revision =(2**i)-1
 
     while total_pages//num_splits < min:
         num_splits = (num_splits//2)
+        i+=1
+        revision = (2**i)-1
     pages_per_split = total_pages // num_splits
 
+    pdf_obj.revision = revision
+    pdf_obj.save()
 
     section_list = list(TimeSlots.objects.filter(tpdf=pdf_obj).order_by('date', 'start_time'))
 
@@ -322,4 +341,110 @@ def split_merged_pdf(merged_pdf,num_splits,section_list):
     
 
         section.save()
+
+
+
+
+
+import fitz  # PyMuPDF
+import io
+
+def process_pdf(pdf_path):
+    # Extract text from the input PDF
+    input_doc = fitz.open(pdf_path)
+    text = ""
+    for page in input_doc:
+        text += page.get_text("text") + "\n"
+    input_doc.close()
+    
+    # Detect sections in the document
+    sections = {}
+    current_section = "Introduction"
+    sections[current_section] = ""
+    for line in text.split("\n"):
+        line = line.strip()
+        if not line:
+            continue
+        if line.isupper() or line.startswith("Chapter") or line[0].isdigit():
+            current_section = line
+            sections[current_section] = ""
+        else:
+            sections[current_section] += line + "\n"
+    
+    # Generate the output PDF
+    output_doc = fitz.open()
+    page_width, page_height = 595, 842  # A4 dimensions in points
+    margins, column_gap = 50, 20
+    
+    for section, content in sections.items():
+        stripped_content = content.strip()
+        if not stripped_content or len(stripped_content.split()) <= 10:
+            continue
+        
+        lines = [line.strip() for line in stripped_content.split('\n') if line.strip()]
+        if not lines:
+            continue
+        
+        page = output_doc.new_page()
+        y_position = margins
+        
+        # Determine the best font size to fit content in one column
+        initial_font = 12
+        min_font = 3
+        best_font = None
+        heading_font = 14
+        
+        for test_font in range(initial_font, min_font - 1, -1):
+            line_height = test_font * 1.2
+            max_lines = (page_height - 2 * margins - heading_font * 2) // line_height
+            if len(lines) <= max_lines:
+                best_font = test_font
+                break
+        
+        if best_font is not None:
+            # Single column layout with determined font size
+            page.insert_text((margins, y_position), section, 
+                            fontname="Helvetica-Bold", fontsize=heading_font)
+            y_position += heading_font * 2
+            for line in lines:
+                page.insert_text((margins, y_position), line, 
+                                fontname="Times-Roman", fontsize=best_font)
+                y_position += best_font * 1.2
+        else:
+            # Two-column layout with minimum font size
+            content_font = min_font
+            line_height = content_font * 1.2
+            max_lines_col = int((page_height - 2 * margins - heading_font * 2) // line_height)
+            max_lines_col = max(1, max_lines_col)
+            split_index = min(max_lines_col, len(lines))
+            left_lines = lines[:split_index]
+            right_lines = lines[split_index:]
+            
+            page.insert_text((margins, y_position), section, 
+                            fontname="Helvetica-Bold", fontsize=heading_font)
+            y_position += heading_font * 2
+            
+            col_width = (page_width - 2 * margins - column_gap) // 2
+            x_right = margins + col_width + column_gap
+            
+            def add_column(x_start, column_lines):
+                y = y_position
+                for line in column_lines:
+                    if y + line_height > page_height - margins:
+                        break
+                    page.insert_text((x_start, y), line, 
+                                    fontname="Times-Roman", fontsize=content_font)
+                    y += line_height
+            
+            add_column(margins, left_lines)
+            add_column(x_right, right_lines)
+    
+    # Save the generated PDF to a bytes buffer and return
+    buffer = io.BytesIO()
+    output_doc.save(buffer)
+    pdf_bytes = buffer.getvalue()
+    output_doc.close()
+    buffer.close()
+    
+    return pdf_bytes
 

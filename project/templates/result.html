@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Session View</title>
+    <style>
+        body {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px;
+            line-height: 1.6;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f4;
+        }
+        p {
+            margin: 0 0 1.2em;
+            text-align: left;
+        }
+        .page-heading {
+            color: #333;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .page-break {
+            text-align: center;
+            color: #888;
+            margin: 20px 0;
+            font-style: italic;
+        }
+
+        
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        .back-btn:hover {
+            background-color: #0056b3;
+        }
+        .back-btn:active {
+            background-color: #004080;
+        }
+    </style>
+</head>
+<body>
+    <a href="{% url 'schedules' %}" class="back-btn">← Back to Home</a>
+    {{ html_content|safe }}
+</body>
+</html>

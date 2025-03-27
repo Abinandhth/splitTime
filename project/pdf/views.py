@@ -12,6 +12,9 @@ import os
 from io import BytesIO
 from django.urls import reverse
 from django.utils import timezone
+from pdfminer.high_level import extract_pages
+from pdfminer.layout import LTTextContainer, LTChar
+import re
 
 
 @login_required(login_url='/login/')
@@ -56,7 +59,8 @@ def schedules(request):
                 'section_status': slot.section_status,
                 'time_status': slot.time_status,
                 'not_complete':slot.not_complete,
-                'id': slot.pk
+                'id': slot.pk,
+                'structured':slot.tpdf.structured
             })
 
         schedules.append({
@@ -110,7 +114,10 @@ def pdf_reschedule(request,pk):
             total_updated_slots = TimeSlots.objects.filter(tpdf=pdf_obj,section_status=False)
   
             merged_pdf = merge_pdfs_in_memory(total_updated_slots)
+            print("merged")
 
+            
+           
 
             selected_timeslots_json = request.POST.get('selected_timeslots', '')
             import json
@@ -152,8 +159,9 @@ def pdf_reschedule(request,pk):
 
                 pdf_obj.total_noof_timeslots = total_time
                 pdf_obj.save()
-
-                split_and_store_pdf(merged_pdf,slots_count,min_section,pdf_obj)
+                print("saved")
+            
+            
                 
                 
             except json.JSONDecodeError:
@@ -161,17 +169,18 @@ def pdf_reschedule(request,pk):
             except ValueError as e:
                 print(f"Error parsing date or time: {e}")
 
+            if merged_pdf:  # Check if merged_pdf is not None
+                split_and_store_pdf(merged_pdf, slots_count, min_section, pdf_obj)
+            else:
+                print("No PDFs merged; skipping split.")
                     
 
-        else :
-             # Update settings only if values are provided
+        else:
+            # Update settings only if values are provided
+            user_settings = Settings.objects.get(user_settings=request.user)  # Add this line
             min_val = request.POST.get('min')
             if min_val and min_val.strip():
                 user_settings.min = int(min_val)
-
-            max_val = request.POST.get('max')
-            if max_val and max_val.strip():
-                user_settings.max = int(max_val)
 
             duration_val = request.POST.get('duration')
             if duration_val and duration_val.strip():
@@ -205,10 +214,9 @@ def merge_pdfs_in_memory(timeslots):
         return None
 
     # Merge PDFs
-    for slot in timeslots:
-        if slot.section_file:  # Ensure file exists
-            pdf_merger.insert_pdf(fitz.open(stream=slot.section_file.read(), filetype="pdf"))
-            slot.delete()
+    for slot in timeslots: # Ensure file exists
+        pdf_merger.insert_pdf(fitz.open(stream=slot.section_file.read(), filetype="pdf"))
+        slot.delete()
 
     print("PDFs merged in memory.")
     return pdf_merger
@@ -218,15 +226,21 @@ def split_and_store_pdf(merged_pdf,num_splits,min,pdf_obj):
     doc = merged_pdf
     total_pages = len(doc)
 
-
+    i=1
+    revision = 0
     if num_splits > total_pages:
         print("error:invalid no of splits")
         num_splits = (num_splits//2)
+        revision =(2**i)-1
 
     while total_pages//num_splits < min:
         num_splits = (num_splits//2)
+        i+=1
+        revision = (2**i)-1
     pages_per_split = total_pages // num_splits
 
+    pdf_obj.revision = revision
+    pdf_obj.save()
 
     section_list = list(TimeSlots.objects.filter(tpdf=pdf_obj,section_status=False).order_by('date', 'start_time'))
 
@@ -255,3 +269,86 @@ def split_and_store_pdf(merged_pdf,num_splits,min,pdf_obj):
         )
 
         section.save()
+
+
+def upload_pdf(request,pk):
+    if request.method == 'POST':
+        slot = TimeSlots.objects.get(pk=pk)
+        uploaded_file = slot.section_file
+        html_content = generate_html_content(uploaded_file)
+        return render(request, 'result.html', {'html_content': html_content})
+
+
+
+
+
+
+def is_bold(element):
+    for text_line in element:
+        if hasattr(text_line, "_objs"):
+            for char in text_line._objs:
+                if isinstance(char, LTChar) and "Bold" in char.fontname:
+                    return True
+    return False
+
+def clean_text(text):
+    text = re.sub(r' +', ' ', text)
+    return text.strip()
+
+def generate_html_content(uploaded_file):
+    html_elements = []
+    
+    # Read uploaded file into a seekable buffer
+    pdf_content = uploaded_file.read()
+    pdf_file = BytesIO(pdf_content)
+    pdf_file.seek(0)
+    
+    for page_num, page_layout in enumerate(extract_pages(pdf_file)):
+        page_content = []
+        heading = None
+        
+        elements = [e for e in page_layout if isinstance(e, LTTextContainer)]
+        
+        if elements:
+            x0, y0, x1, y1 = page_layout.bbox
+            midpoint = (x0 + x1) / 2
+            
+            left_col = []
+            right_col = []
+            for element in elements:
+                center_x = (element.x0 + element.x1) / 2
+                if center_x < midpoint:
+                    left_col.append(element)
+                else:
+                    right_col.append(element)
+            
+            left_col_sorted = sorted(left_col, key=lambda e: -e.y1)
+            right_col_sorted = sorted(right_col, key=lambda e: -e.y1)
+            sorted_elements = left_col_sorted + right_col_sorted
+        else:
+            sorted_elements = []
+        
+        # Find heading
+        for element in sorted_elements:
+            if is_bold(element):
+                heading = clean_text(element.get_text())
+                break
+        
+        # Process elements
+        for element in sorted_elements:
+            text = clean_text(element.get_text())
+            if not text:
+                continue
+            
+            if text == heading:
+                page_content.append(f'<h2 class="page-heading">{text}</h2>')
+                heading = None
+                continue
+            
+            text_with_breaks = text.replace('\n', '<br>')
+            page_content.append(f'<p>{text_with_breaks}</p>')
+
+        html_elements.extend(page_content)
+        html_elements.append(f'<div class="page-break">Page {page_num+1}</div>')
+    
+    return ''.join(html_elements)

@@ -4,86 +4,384 @@
     {% load static %}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Schedules</title>
+    <title>Study Schedule Manager</title>
+    <style>
+        :root {
+            --primary: rgb(49, 175, 253);
+            --bg: #ffffff;
+            --text: #2d3436;
+            --border: #e0e0e0;
+            --shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 2rem;
+            background: #f8f9fa;
+            color: var(--text);
+        }
+
+        .back-btn {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            background: var(--primary);
+            color: white;
+            text-decoration: none;
+            margin-bottom: 2rem;
+            transition: all 0.2s ease;
+        }
+
+        .back-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .schedules-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .date-picker {
+            padding: 0.5rem;
+            border: 2px solid var(--primary);
+            border-radius: 6px;
+            font-size: 1rem;
+            margin-left: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .schedule-item {
+            background: var(--bg);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+
+        .pdf-header {
+            padding: 1.5rem;
+            background: rgba(49, 175, 253, 0.1);
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .pdf-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin: 0;
+        }
+
+        .day-container {
+            padding: 1rem;
+        }
+
+        .day-section {
+            margin: 1rem 0;
+        }
+
+        .day-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: rgba(249, 249, 249, 0.8);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .day-header:hover {
+            background: rgba(49, 175, 253, 0.05);
+        }
+
+        .date-title {
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        .toggle-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.2rem;
+            color: var(--text);
+            transition: transform 0.3s ease;
+        }
+
+        .time-slots {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            max-height: 0;
+            overflow: hidden;
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .time-slots.visible {
+            max-height: 1000px;
+            opacity: 1;
+        }
+
+        .time-slot {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            transition: all 0.2s ease;
+        }
+
+        .slot-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .slot-actions {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .status-pending {
+            background: #fff3e0;
+            color: #ef6c00;
+        }
+
+        .status-completed {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .reschedule-form {
+            margin-top: 1rem;
+            padding: 1rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: rgba(49, 175, 253, 0.03);
+            animation: slideDown 0.3s ease;
+            display: none;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+
+        .btn-secondary {
+            background: #f5f5f5;
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .minimized-view {
+            display: none;
+            font-size: 0.9rem;
+            color: #666;
+            padding: 0.5rem 1rem;
+            background: rgba(49, 175, 253, 0.05);
+            border-radius: 6px;
+            margin-top: 0.5rem;
+        }
+
+        .collapsed .minimized-view {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+            
+            .day-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+            
+            .time-slot {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+            
+            .slot-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .date-picker {
+                width: 100%;
+                margin-left: 0;
+                margin-top: 1rem;
+            }
+        }
+    </style>
 </head>
 <body>
-    <a href="{% url 'home' %}">back</a>
-    <!-- Add this to your home.html template -->
+    <a href="{% url 'home' %}" class="back-btn">← Back to Home</a>
+
     <div class="schedules-container">
-        <h2>Schedules for 
+        <h2>
+            Schedules for 
             <form method="GET" style="display: inline-block;">
                 <input type="date" 
                        name="date" 
                        value="{{ selected_date }}"
                        onchange="this.form.submit()"
-                       style="font-size: 1.2rem; padding: 5px;">
+                       class="date-picker">
             </form>
         </h2>
-    
+
         {% for schedule in schedules %}
             <div class="schedule-item">
-                <h3>{{ schedule.pdf_name }}</h3>
-                {% for day in schedule.dates %}
-                    <div class="schedule-day">
-                        <h4>{{ day.date }}</h4>
-                        <ul>
-                            {% for slot in day.slots %}
-                                <li>
-                                    {{ slot.time }}
-                                    {% if slot.section_url %}
-                                        - <a href="{{ slot.section_url }}" target="_blank">View Section</a>
-                                    {% else %}
-                                        - No section available
-                                    {% endif %}
+                <div class="pdf-header">
+                    <h3 class="pdf-title">{{ schedule.pdf_name }}</h3>
+                </div>
 
-                                    {% if slot.not_complete %}
-                                        <span>not completed</span>
-                                    {% elif not slot.section_status  %}
-                                        <form method="post" action="{% url 'section_complete' slot.id %}">
-                                            {% csrf_token %}
-                                            <button type="submit">Complete</button>
-                                        </form>
+                <div class="day-container">
+                    {% for day in schedule.dates %}
+                        <div class="day-section">
+                            <div class="day-header" onclick="toggleDay(this)">
+                                <div>
+                                    <div class="date-title">{{ day.date }}</div>
+                                    <div class="minimized-view">
+                                        {{ day.slots|length }} time slot{{ day.slots|length|pluralize }} • 
+                                        {{ day.completed_slots }}
+                                    </div>
+                                </div>
+                                <button class="toggle-btn">▼</button>
+                            </div>
+                            
+                            <ul class="time-slots">
+                                {% for slot in day.slots %}
+                                    <li class="time-slot">
+                                        <div class="slot-info">
+                                            <span>{{ slot.time }}</span>
+                                            {% if slot.structured and  slot.id %}
+                                            <form method="post" action="{% url 'upload_pdf' slot.id %}" style="display: inline;">
+                                                {% csrf_token %}
+                                                <button type="submit">View Section</button>
+                                            </form>
+                                            {% elif slot.section_url %}
+                                                <a href="{{ slot.section_url }}" target="_blank" class="btn-secondary">
+                                                    View Section
+                                                </a>
+                                            {% else %}
+                                                <span class="status-badge status-pending">No material</span>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="slot-actions">
+                                            {% if slot.not_complete %}
+                                                <span class="status-badge status-not-completed">❌ Not_Completed</span>
+                                            {% elif slot.section_status %}
+                                                <span class="status-badge status-completed">✅ Completed</span>
+                                            {% else %}
+                                                <form method="post" action="{% url 'section_complete' slot.id %}" style="display: inline;">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn-primary">Mark Complete</button>
+                                                </form>
+                                                <button class="btn-secondary" onclick="toggleRescheduleForm('{{ slot.id }}')">
+                                                    Reschedule
+                                                </button>
+                                            {% endif %}
+                                        </div>
 
-                                        <button onclick="openRescheduleForm('{{ slot.id }}')">Reschedule</button>
-
-                                        <!-- Hidden Reschedule Form -->
-                                        <div id="reschedule-form-{{ slot.id }}" style="display: none; margin-top: 10px; border: 1px solid #ccc; padding: 10px;">
+                                        <div id="reschedule-form-{{ slot.id }}" class="reschedule-form">
                                             <form method="post" action="{% url 'reschedule_schedule' slot.id %}">
                                                 {% csrf_token %}
-                                                <label>From Time:</label>
-                                                <input type="time" name="from_time" required>
-                                                
-                                                <label>To Time:</label>
-                                                <input type="time" name="to_time" required>
-                                                                                            
-                                                <button type="submit">Update</button>
-                                                <button type="button" onclick="closeRescheduleForm( '{{ slot.id }}' )">Cancel</button>
+                                                <div class="form-row">
+                                                    <div>
+                                                        <label>From Time:</label>
+                                                        <input type="time" name="from_time" required>
+                                                    </div>
+                                                    <div>
+                                                        <label>To Time:</label>
+                                                        <input type="time" name="to_time" required>
+                                                    </div>
+                                                </div>
+                                                <div class="form-row">
+                                                    <button type="submit" class="btn-primary">Update</button>
+                                                    <button type="button" class="btn-secondary" onclick="toggleRescheduleForm('{{ slot.id }}')">
+                                                        Cancel
+                                                    </button>
+                                                </div>
                                             </form>
                                         </div>
-                                    {% elif slot.section_status %}
-                                        <span>✅ Completed</span>
-                                       
-                                    {% endif %}
-                                </li>
-                            {% endfor %}
-
-                        </ul>
-                    </div>
-                {% endfor %}
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endfor %}
+                </div>
             </div>
         {% empty %}
-            <p>No schedules available for selected date</p>
+            <div class="schedule-item">
+                <p style="text-align: center; padding: 2rem; color: #666;">
+                    No schedules available for selected date
+                </p>
+            </div>
         {% endfor %}
     </div>
 
-     <script>
-        function openRescheduleForm(slotId) {
-            document.getElementById('reschedule-form-' + slotId).style.display = 'block';
+    <script>
+        function toggleDay(header) {
+            const daySection = header.closest('.day-section');
+            const timeSlots = daySection.querySelector('.time-slots');
+            const toggleBtn = daySection.querySelector('.toggle-btn');
+            
+            if (timeSlots.classList.contains('visible')) {
+                timeSlots.classList.remove('visible');
+                toggleBtn.textContent = '▼';
+            } else {
+                timeSlots.classList.add('visible');
+                toggleBtn.textContent = '▲';
+            }
+            daySection.classList.toggle('collapsed');
         }
-        
-        function closeRescheduleForm(slotId) {
-            document.getElementById('reschedule-form-' + slotId).style.display = 'none';
+
+        function toggleRescheduleForm(slotId) {
+            const form = document.getElementById(`reschedule-form-${slotId}`);
+            if (form) {
+                form.style.display = form.style.display === 'none' ? 'block' : 'none';
+            }
         }
+
     </script>
 </body>
 </html>

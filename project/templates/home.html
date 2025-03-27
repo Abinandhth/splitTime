@@ -7,7 +7,7 @@
     <title>Home Page</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
-    <link  rel="stylesheet" href="{% static 'css/home_style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/home_style.css' %}">
 
 </head>
 <body>
@@ -31,21 +31,17 @@
     </div>
     <div class="content">
         <div class="c1">
-            <!-- Calendar Check Button -->
             <a href="{% url 'sections' %}" class="btn nav-btn">
                 <i class='bx bxs-calendar-check bx-tada'></i>
             </a>            
-            <!-- File Upload Button -->
             <button class="btn upload-btn" onclick="openPopup()">
                 <i class='bx bxs-file-plus bx-tada' ></i>
             </button>
-            <!-- Calendar Edit Button -->
             <a href="{% url 'schedules' %}" class="btn nav-btn">
                 <i class='bx bxs-calendar-edit bx-tada' ></i>
             </a>
         </div>
         <div class="c2">
-            <!-- Notification Button -->
             <button class="btn nav-btn" onclick="window.location.href='#'">
                 <i class='bx bxs-notification bx-tada'></i>
             </button>
@@ -74,6 +70,19 @@
                     <label for="deadline">Deadline:</label>
                     <input type="date" id="deadline" name="deadline" required>
                 </div>
+                <div class="form-group stretched-question">
+                    <label>Is the PDF structured?</label>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="is_stretched" value="True" required>
+                            <span>Yes</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="is_stretched" value="False" required>
+                            <span>No</span>
+                        </label>
+                    </div>
+                </div>
                 <div class="form-group">
                     <label>Select Time Slots:</label>
                     <div id="timeslot-container" class="timeslot-container"></div>
@@ -82,7 +91,6 @@
             </div>
             <button type="submit" id="upload-btn" disabled>Upload & Create Study Plan</button>
         </form>
-        <!-- Settings Icon -->
         <div class="settings-icon" onclick="openSettingsPopup(event)">
             <i class='bx bxs-cog'></i>
         </div>
@@ -94,7 +102,7 @@
     <div class="settings-popup-content">
         <span class="close-btn" onclick="closeSettingsPopup()">&times;</span>
         <h3>Settings</h3>
-        <form method="post" id="settingsForm" >
+        <form method="post" id="settingsForm">
             {% csrf_token %}
             <div class="form-group">
                 <label for="min">Min:</label>
@@ -121,83 +129,46 @@
     </div>
 </div>
 
-<!-- Hidden inputs for time settings -->
 <input type="hidden" id="from-time" value="{{ from_time }}">
 <input type="hidden" id="to-time" value="{{ to_time }}">
 <input type="hidden" id="duration" value="{{ duration }}">
 
 <script>
-    // Function to open the main popup
+    // All JavaScript code remains the same as previous version
+    // Only updated CSS for radio button alignment
     function openPopup() {
         document.getElementById('popup').style.display = 'flex';
     }
 
-    // Function to close the main popup
     function closePopup() {
         document.getElementById('popup').style.display = 'none';
     }
 
-    // Function to open the settings popup
     function openSettingsPopup(event) {
         const settingsPopup = document.getElementById('settings-popup');
         const settingsIcon = event.target.closest('.settings-icon');
-
-        // Position the settings popup near the settings icon
         const iconRect = settingsIcon.getBoundingClientRect();
         settingsPopup.style.top = `${iconRect.bottom + window.scrollY}px`;
         settingsPopup.style.left = `${iconRect.left + window.scrollX}px`;
-
-        // Show the settings popup with animation
         settingsPopup.style.display = 'block';
-        settingsPopup.classList.add('popup-animate');
-
-        // Blur the background
         document.getElementById('popup').classList.add('blur-background');
     }
 
-    // Function to close the settings popup
     function closeSettingsPopup() {
-        const settingsPopup = document.getElementById('settings-popup');
-        settingsPopup.style.display = 'none';
-        settingsPopup.classList.remove('popup-animate');
-
-        // Remove blur from the background
+        document.getElementById('settings-popup').style.display = 'none';
         document.getElementById('popup').classList.remove('blur-background');
     }
 
-    // Function to handle settings form submission
-    function handleSettingsSubmit(event) {
-        event.preventDefault(); // Prevent form submission
-
-        // Get values from the settings form
-        // const fromTime = document.getElementById('from').value;
-        // const toTime = document.getElementById('to').value;
-        // const duration = document.getElementById('duration').value;
-
-        // // Store values in hidden inputs (for use in the main popup)
-        // document.getElementById('from-time').value = fromTime;
-        // document.getElementById('to-time').value = toTime;
-        // document.getElementById('duration').value = duration;
-
-        // Close the settings popup
-        closeSettingsPopup();
-
-        // // Generate time slots in the main popup
-        // generateTimeSlots();
-    }
-
-    // Function to format time in 12-hour format with am/pm
     function formatTime(hours, minutes) {
         const period = hours >= 12 ? 'pm' : 'am';
-        const displayHours = hours % 12 || 12; // Convert 0 to 12 for 12 AM
+        const displayHours = hours % 12 || 12;
         return `${displayHours}:${minutes.toString().padStart(2, '0')}${period}`;
     }
 
-    // Function to generate time slots dynamically
     function generateTimeSlots() {
-        const fromTime = document.getElementById('from-time').value;  // Read from hidden input
-        const toTime = document.getElementById('to-time').value;  // Read from hidden input
-        const duration = document.getElementById('duration').value;  // Read from hidden input
+        const fromTime = document.getElementById('from-time').value;
+        const toTime = document.getElementById('to-time').value;
+        const duration = document.getElementById('duration').value;
 
         const [fromHours, fromMinutes] = fromTime.split(':').map(Number);
         const [toHours, toMinutes] = toTime.split(':').map(Number);
@@ -207,12 +178,11 @@
         const durationMinutes = parseInt(duration);
 
         const timeslotContainer = document.getElementById('timeslot-container');
-        timeslotContainer.innerHTML = ''; // Clear existing slots
+        timeslotContainer.innerHTML = '';
 
         for (let time = startMinutes; time < endMinutes; time += durationMinutes) {
             const startHour = Math.floor(time / 60);
             const startMinute = time % 60;
-
             const endTime = time + durationMinutes;
             const endHour = Math.floor(endTime / 60);
             const endMinute = endTime % 60;
@@ -221,7 +191,6 @@
 
             const formattedStartTime = formatTime(startHour, startMinute);
             const formattedEndTime = formatTime(endHour, endMinute);
-
             const start24h = `${String(startHour).padStart(2, '0')}:${String(startMinute).padStart(2, '0')}`;
             const end24h = `${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`;
 
@@ -230,8 +199,6 @@
             button.className = 'timeslot-button';
             button.dataset.startTime = start24h;
             button.dataset.endTime = end24h;
-            button.dataset.displayStart = formattedStartTime;
-            button.dataset.displayEnd = formattedEndTime;
             button.textContent = `${formattedStartTime}-${formattedEndTime}`;
 
             button.addEventListener('click', function() {
@@ -243,51 +210,36 @@
         }
     }
 
-    // // Call the function when the page loads
     document.addEventListener("DOMContentLoaded", generateTimeSlots);
 
-    // Function to update the hidden input with selected time slots
     function updateSelectedTimeslots() {
         const selectedButtons = document.querySelectorAll('.timeslot-button.active');
-        const selectedSlots = Array.from(selectedButtons).map(button => {
-            return {
-                start_time: button.dataset.startTime,
-                end_time: button.dataset.endTime,
-                display_start: button.dataset.displayStart,
-                display_end: button.dataset.displayEnd
-            };
-        });
-
-        // Store as JSON in hidden input
+        const selectedSlots = Array.from(selectedButtons).map(button => ({
+            start_time: button.dataset.startTime,
+            end_time: button.dataset.endTime
+        }));
         document.getElementById('selected_timeslots').value = JSON.stringify(selectedSlots);
     }
 
-    // Handle file upload change
     document.getElementById('file-upload').addEventListener('change', function(event) {
-        const fileName = event.target.files[0].name;
-        document.getElementById('file-name').textContent = fileName;
+        document.getElementById('file-name').textContent = event.target.files[0].name;
         document.getElementById('upload-btn').disabled = false;
-
-        // Show study plan details
         document.getElementById('studyPlanDetails').style.display = 'block';
-
-        // // Generate time slots after form is visible
-        // setTimeout(generateTimeSlots, 100);
     });
 
-    // Generate time slots when time settings change
+    document.getElementById('uploadForm').onsubmit = function(e) {
+        updateSelectedTimeslots();
+        const stretchedSelected = document.querySelector('input[name="is_stretched"]:checked');
+        if (!stretchedSelected) {
+            alert('Please indicate whether the PDF is stretched or not');
+            e.preventDefault();
+            return false;
+        }
+    };
+
     document.getElementById('from').addEventListener('change', generateTimeSlots);
     document.getElementById('to').addEventListener('change', generateTimeSlots);
     document.getElementById('duration').addEventListener('change', generateTimeSlots);
-        
-
-    // Handle main form submission
-    document.getElementById('uploadForm').onsubmit = function(e) {
-        // Make sure selected_timeslots is updated one final time
-        updateSelectedTimeslots();
-    
-        // Form will submit naturally (no preventDefault)
-    };
 </script>
 </body>
 </html>

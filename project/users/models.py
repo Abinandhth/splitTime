@@ -9,6 +9,8 @@ class Pdf(models.Model):
     deadline = models.DateField(null=True,blank=True)
     total_sections = models.IntegerField(null=True,blank=True)
     total_noof_timeslots = models.IntegerField(null=True,blank=True)
+    revision = models.IntegerField(null=True,blank=True)
+    structured = models.BooleanField(null=False,default=False)
 
     def __str__(self):
         return self.title if self.title else (self.pdf_file.name if self.pdf_file else "No file")
@@ -19,7 +21,6 @@ class Pdf(models.Model):
     
 class Settings(models.Model):
     min = models.IntegerField(default=1,null=False)
-    max = models.IntegerField(default=5,null=False)
     duration = models.DurationField(default=datetime.timedelta(minutes=30),null=False)  
     from_time = models.TimeField(default=datetime.time(18,0),null=False)
     to_time = models.TimeField(default=datetime.time(22,0),null=False)
