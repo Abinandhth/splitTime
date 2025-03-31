@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Creation Guide</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/account_guide_style.css' %}">
+
+</head>
+<body>
+    <div class="container">
+        <h1>Account Creation Guide</h1>
+        <p>Follow these simple steps to create your account and get started with our services.</p>
+        
+        <video controls>
+            <source src="{% static 'video/bg1.mp4' %}" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+        
+        <div class="instructions">
+            <h2>Step-by-Step Instructions</h2>
+            <ul>
+                <li>Go to the homepage and click on the <strong>Sign Up</strong> button.</li>
+                <li>Enter your full name, email address, and create a secure password.</li>
+                <li>Check your email for a verification link and click on the link to verify your email.</li>
+                <li>Log into your account using your email and password.</li>
+                <li>Complete your user profile by providing additional details as requested.</li>
+                <li>Start exploring the features available on your account dashboard.</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

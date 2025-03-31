@@ -10,6 +10,8 @@ urlpatterns = [
     path('logout/',views.logout,name='logout'),
     path('pdf_delete/<int:pk>/',views.pdf_delete,name='pdf_delete'),
     path('section_complete/<int:slot_id>/',views.section_complete,name='section_complete'),
+    path('account_guide/',views.account_guide,name='account_guide'),
+    path('stay_motivated_guide/',views.stay_motivated_guide,name='stay_motivated_guide'),
      # Password reset views
     path("reset_password/", auth_views.PasswordResetView.as_view(), name="password_reset"),
     path("reset_password_sent/", auth_views.PasswordResetDoneView.as_view(), name="password_reset_done"),

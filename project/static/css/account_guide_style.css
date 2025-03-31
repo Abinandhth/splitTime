@@ -1,0 +1,122 @@
+body {
+    font-family: 'Poppins', sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #6dd5ed 0%, #2193b0 100%);
+    animation: fadeIn 1.5s ease-in-out;
+}
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+.container {
+    background: #ffffff;
+    padding: 50px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    max-width: 900px;
+    width: 100%;
+    text-align: center;
+    margin: 40px 20px;
+}
+h1 {
+    color: #333;
+    font-size: 2.8em;
+    margin-bottom: 20px;
+    letter-spacing: 1.5px;
+}
+p {
+    color: #666;
+    font-size: 18px;
+    margin-bottom: 30px;
+    line-height: 1.8;
+}
+video {
+    width: 100%;
+    border-radius: 15px;
+    margin-bottom: 30px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+}
+.instructions {
+    text-align: left;
+    background: #f7f7f7;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+    margin-top: 20px;
+}
+.instructions h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #333;
+    font-size: 1.8em;
+}
+.instructions ul {
+    padding: 0;
+    list-style: none;
+}
+.instructions li {
+    font-size: 16px;
+    padding-left: 35px;
+    margin-bottom: 15px;
+    position: relative;
+    line-height: 1.8;
+}
+.instructions li::before {
+    content: '\f058';
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+    color: #2193b0;
+    position: absolute;
+    left: 0;
+    top: 0;
+    font-size: 20px;
+}
+
+/* Media Queries for Mobile */
+@media (max-width: 768px) {
+    .container {
+        padding: 30px;
+        margin: 20px;
+    }
+    h1 {
+        font-size: 2em;
+    }
+    p {
+        font-size: 16px;
+    }
+    .instructions {
+        padding: 20px;
+    }
+    .instructions h2 {
+        font-size: 1.5em;
+    }
+    .instructions li {
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 480px) {
+    h1 {
+        font-size: 1.8em;
+    }
+    p {
+        font-size: 14px;
+    }
+    video {
+        border-radius: 10px;
+    }
+    .instructions li {
+        font-size: 13px;
+    }
+}

@@ -31,22 +31,26 @@
     </div>
     <div class="content">
         <div class="c1">
-            <a href="{% url 'sections' %}" class="btn nav-btn">
+            <!-- Calendar Check Button -->
+            <a href="{% url 'sections' %}" class="btn nav-btn" data-tooltip="Pdf Management">
                 <i class='bx bxs-calendar-check bx-tada'></i>
-            </a>            
-            <button class="btn upload-btn" onclick="openPopup()">
-                <i class='bx bxs-file-plus bx-tada' ></i>
+            </a>  
+            <!-- File Upload Button -->
+            <button class="btn upload-btn" data-tooltip="Upload" onclick="openPopup()">
+                <i class='bx bxs-file-plus bx-tada'></i>
             </button>
-            <a href="{% url 'schedules' %}" class="btn nav-btn">
+            <!-- Calendar Edit Button -->
+            <a href="{% url 'schedules' %}" class="btn nav-btn" data-tooltip="Schedules">
                 <i class='bx bxs-calendar-edit bx-tada' ></i>
             </a>
         </div>
         <div class="c2">
-            <button class="btn nav-btn" onclick="window.location.href='#'">
+            <!-- Notification Button -->
+            <button class="btn nav-btn" data-tooltip="Notification" onclick="window.location.href='#'">
                 <i class='bx bxs-notification bx-tada'></i>
             </button>
         </div>                    
-    </div> 
+    </div>
 </div>
 
 <!-- Main Popup Window -->
@@ -64,7 +68,7 @@
                 <h3>Study Plan Details</h3>
                 <div class="form-group">
                     <label for="pdfTitle">PDF Title:</label>
-                    <input type="text" id="pdfTitle" name="pdfTitle" required>
+                    <input type="text" id="pdfTitle" name="pdfTitle" >
                 </div>
                 <div class="form-group">
                     <label for="deadline">Deadline:</label>
@@ -108,10 +112,7 @@
                 <label for="min">Min:</label>
                 <input type="number" id="min" name="min">
             </div>
-            <div class="form-group">
-                <label for="max">Max:</label>
-                <input type="number" id="max" name="max">
-            </div>
+            
             <div class="form-group">
                 <label for="duration">Duration (minutes):</label>
                 <input type="number" id="default-duration" name="duration">
@@ -138,10 +139,12 @@
     // Only updated CSS for radio button alignment
     function openPopup() {
         document.getElementById('popup').style.display = 'flex';
+        document.body.classList.add('body-no-scroll'); //
     }
 
     function closePopup() {
         document.getElementById('popup').style.display = 'none';
+        document.body.classList.remove('body-no-scroll');
     }
 
     function openSettingsPopup(event) {
@@ -236,6 +239,55 @@
             return false;
         }
     };
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const deadlineInput = document.getElementById("deadline");
+
+        // Get tomorrow's date in YYYY-MM-DD format
+        const today = new Date();
+        today.setDate(today.getDate() + 1); // Move to the next day
+        const tomorrow = today.toISOString().split("T")[0];
+
+        // Set the min attribute to prevent selecting today or past dates
+        deadlineInput.setAttribute("min", tomorrow);
+    });
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const deadlineInput = document.getElementById("deadline");
+
+        function updateTimeSlots() {
+            const selectedDate = new Date(deadlineInput.value);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Reset time for accurate date comparison
+
+            const currentHours = new Date().getHours();
+            const currentMinutes = new Date().getMinutes();
+
+            document.querySelectorAll('.timeslot-button').forEach(button => {
+                const [startHour, startMinute] = button.dataset.startTime.split(":").map(Number);
+
+                // If the user selects tomorrow
+                let tomorrow = new Date();
+                tomorrow.setDate(today.getDate() + 1); // Get tomorrow's date
+                if (selectedDate.toDateString() === tomorrow.toDateString()) {
+                    // Disable time slots before the current time
+                    if (startHour < currentHours || (startHour === currentHours && startMinute < currentMinutes)) {
+                        button.disabled = true;
+                        button.classList.add("disabled");
+                    } else {
+                        button.disabled = false;
+                        button.classList.remove("disabled");
+                    }
+                } else {
+                    button.disabled = false; // Enable all slots for other days
+                    button.classList.remove("disabled");
+                }
+            });
+        }   
+
+    deadlineInput.addEventListener("change", updateTimeSlots);
+});
+
 
     document.getElementById('from').addEventListener('change', generateTimeSlots);
     document.getElementById('to').addEventListener('change', generateTimeSlots);

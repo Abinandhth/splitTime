@@ -190,6 +190,39 @@ body {
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
     transform: scale(1.1);
 }
+/* ===== Tooltip Styles ===== */
+.btn {
+    position: relative; /* Required for tooltip positioning */
+}
+
+.btn::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: -30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    /* background: rgba(0, 0, 0, 0.8); */
+    color: rgb(11, 122, 191);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    pointer-events: none;
+    z-index: 100;
+}
+
+.btn:hover::after {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* Add this to maintain button scaling */
+.btn:hover {
+    transform: scale(1.05) !important;
+}
 
 /* Popup Styles */
 .popup {
@@ -203,6 +236,7 @@ body {
     justify-content: center;
     align-items: center;
     z-index: 1000;
+    overflow: hidden;
 }
 
 .popup-content {
@@ -212,6 +246,17 @@ body {
     width: 400px;
     text-align: center;
     position: relative;
+    overflow: auto;
+    max-height: 90vh; /* Restrict height to 90% of screen */
+    box-sizing: border-box;
+    width: 90%; /* More responsive */
+    max-width: 500px; /* Prevent overly wide popups */
+    padding: 15px;
+}
+
+/* Add this to home_style.css */
+.body-no-scroll {
+    overflow: hidden;
 }
 
 .close-btn {

@@ -139,5 +139,6 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = "kmabinandh7@gmail.com"  #senders email
 EMAIL_HOST_PASSWORD = "xmlx ehrz syak olwj"  # Use an app password for security
+DEFAULT_FROM_EMAIL = "kmabinandh7@gmail.com"
 
 LOGIN_URL = "/login/"  # Change this to your actual login URL

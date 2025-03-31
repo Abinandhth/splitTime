@@ -15,6 +15,12 @@ from io import BytesIO
 def main(request):
     return render(request, 'main.html')
 
+def account_guide(request):
+    return render(request,'account_guide.html')
+
+def stay_motivated_guide(request):
+    return render(request,'stay_motivated_guide.html')
+
 def login(request):
     error_message = None
     if request.method == "POST":

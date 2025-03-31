@@ -93,13 +93,14 @@
 
         /* Settings Icon */
         .settings-icon {
-            background: #3498db;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: 0.3s;
+        position: absolute;
+        top: 10px;
+        right: 45px;
+        font-size: 15px;
+        height: 5px;
+        width: 10px;
+        cursor: pointer;
+        color: #333;
         }
 
         .settings-icon:hover {
@@ -240,7 +241,7 @@
                     {% for pdf in pdfs %}
                         {% if pdf.pdf_file %}
                             <li>
-                                <a href="{{ pdf.pdf_file.url }}" target="_blank">{{ pdf.title }}</a>
+                                <a href="{{ pdf.pdf_file.url }}" target="_blank">View PDF</a>
                                 <h4>{{ pdf.title }}</h4>
                                 <h4>{{ pdf.deadline }}</h4>
                                 {% if pdf.revision > 0 %}
@@ -253,9 +254,6 @@
                                         <button type="submit">Delete</button>
                                     </form>
                                     <button class="btn upload-btn" onclick="openRescheduleForm('{{ pdf.pk }}')">Reschedule</button>
-                                    <button class="settings-icon" onclick="openSettingsPopup(event)">
-                                        <i class='bx bxs-cog'></i>
-                                    </button>
                                 </div>
                             </li>
                         {% else %}
@@ -274,6 +272,9 @@
     <div class="reschedule-popup" id="reschedule-popup-{{ pdf.pk }}">
         <div class="reschedule-content">
             <span class="close-reschedule" onclick="closeRescheduleForm('{{ pdf.pk }}')">&times;</span>
+            <div class="settings-icon" onclick="openSettingsPopup(event)">
+                <i class='bx bxs-cog'></i>
+            </div>
             <form method="post" action="{% url 'pdf_reschedule' pdf.pk %}">
                 {% csrf_token %}
                 <label for="pdfTitle-{{ pdf.pk }}">PDF Title:</label>
@@ -293,6 +294,7 @@
                     <button type="button" onclick="closeRescheduleForm('{{ pdf.pk }}')">Cancel</button>
                 </div>
             </form>
+            
         </div>
     </div>
     {% endfor %}
@@ -305,19 +307,24 @@
             <form method="post" id="settingsForm" action="{% url 'pdf_reschedule' 0 %}">
                 {% csrf_token %}
                 <div class="form-group">
+                    <label for="min">Min:</label>
+                    <input type="number" id="min" name="min">
+                </div>
+                
+                <div class="form-group">
                     <label for="duration">Duration (minutes):</label>
-                    <input type="number" id="default-duration" name="duration" required>
+                    <input type="number" id="default-duration" name="default-duration" >
                 </div>
                 <div class="form-group">
                     <label for="from">Start Time:</label>
-                    <input type="time" id="from" name="from" required>
+                    <input type="time" id="from" name="from" >
                 </div>
                 <div class="form-group">
                     <label for="to">End Time:</label>
-                    <input type="time" id="to" name="to" required>
+                    <input type="time" id="to" name="to" >
                 </div>
                 <div class="action-buttons">
-                    <button type="button" onclick="saveSettings()">Save</button>
+                    <button type="submit" >Save</button>
                     <button type="button" onclick="closeSettingsPopup()">Cancel</button>
                 </div>
             </form>
@@ -344,9 +351,9 @@
         function openSettingsPopup(event) {
             event.preventDefault();
             const settingsPopup = document.getElementById('settings-popup');
-            document.getElementById('from').value = document.getElementById('from-time').value;
-            document.getElementById('to').value = document.getElementById('to-time').value;
-            document.getElementById('default-duration').value = document.getElementById('duration').value;
+            // document.getElementById('from').value = document.getElementById('from-time').value;
+            // document.getElementById('to').value = document.getElementById('to-time').value;
+            // document.getElementById('default-duration').value = document.getElementById('duration').value;
             settingsPopup.style.display = 'block';
         }
 
@@ -354,12 +361,12 @@
             document.getElementById('settings-popup').style.display = 'none';
         }
 
-        function saveSettings() {
-            document.getElementById('from-time').value = document.getElementById('from').value;
-            document.getElementById('to-time').value = document.getElementById('to').value;
-            document.getElementById('duration').value = document.getElementById('default-duration').value;
-            closeSettingsPopup();
-        }
+        // function saveSettings() {
+        //     document.getElementById('from').value = document.getElementById('from').value;
+        //     document.getElementById('to').value = document.getElementById('to').value;
+        //     document.getElementById('default-duration').value = document.getElementById('default-duration').value;
+        //     closeSettingsPopup();
+        // }
 
         // Time Slot Generation
         function formatTime(hours, minutes) {
@@ -426,20 +433,74 @@
             document.getElementById(`selected_timeslots-${pdfId}`).value = JSON.stringify(selectedSlots);
         }
 
-        // Event Listeners
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('from').addEventListener('change', function() {
-                document.getElementById('from-time').value = this.value;
-            });
+        // document.addEventListener("DOMContentLoaded", function () {
+        //     // Get tomorrow's date in YYYY-MM-DD format
+        //     const today = new Date();
+        //     today.setDate(today.getDate() + 1);
+        //     const tomorrow = today.toISOString().split("T")[0];
 
-            document.getElementById('to').addEventListener('change', function() {
-                document.getElementById('to-time').value = this.value;
-            });
+        //     // Select all deadline input fields
+        //     document.querySelectorAll("input[id^='deadline-']").forEach(input => {
+        //         input.setAttribute("min", tomorrow);
+        //     });
+        // });
 
-            document.getElementById('default-duration').addEventListener('change', function() {
-                document.getElementById('duration').value = this.value;
+        
+
+        // ... (Keep existing functions like openRescheduleForm, closeRescheduleForm, etc.)
+
+        document.addEventListener("DOMContentLoaded", function () {
+            // Set minimum deadline date to tomorrow for all PDF entries
+            const today = new Date();
+            today.setDate(today.getDate() + 1);
+            const tomorrow = today.toISOString().split("T")[0];
+
+            // Iterate over all deadline inputs
+            document.querySelectorAll("input[id^='deadline-']").forEach(deadlineInput => {
+                deadlineInput.setAttribute("min", tomorrow); // Set min date
+
+                deadlineInput.addEventListener("change", function () {
+                    const pdfPk = this.id.split("-")[1]; // Extract PDF ID
+                    const selectedDate = new Date(this.value);
+                    const timeslotContainer = document.getElementById(`timeslot-container-${pdfPk}`);
+
+                    if (!timeslotContainer) return;
+
+                    const now = new Date();
+                    const currentHours = now.getHours();
+                    const currentMinutes = now.getMinutes();
+
+                    // Disable past time slots if selected date is tomorrow
+                    timeslotContainer.querySelectorAll('.timeslot-button').forEach(button => {
+                        const [startHour, startMinute] = button.dataset.startTime.split(":").map(Number);
+                        
+                        if (selectedDate.toDateString() === new Date(tomorrow).toDateString()) {
+                            const isPastSlot = (startHour < currentHours) || 
+                                            (startHour === currentHours && startMinute < currentMinutes);
+                            button.disabled = isPastSlot;
+                            button.classList.toggle("disabled", isPastSlot);
+                        } else {
+                            button.disabled = false;
+                            button.classList.remove("disabled");
+                        }
+                    });
+                });
             });
         });
+        // // Event Listeners
+        // document.addEventListener('DOMContentLoaded', function() {
+        //     document.getElementById('from').addEventListener('change', function() {
+        //         document.getElementById('from-time').value = this.value;
+        //     });
+
+        //     document.getElementById('to').addEventListener('change', function() {
+        //         document.getElementById('to-time').value = this.value;
+        //     });
+
+        //     document.getElementById('default-duration').addEventListener('change', function() {
+        //         document.getElementById('duration').value = this.value;
+        //     });
+        // });
     </script>
 </body>
 </html>
