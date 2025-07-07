@@ -76,15 +76,6 @@ def home(request):
             merged_pdf = merge_pdfs_in_memory(timeslots)
             section_list = list(TimeSlots.objects.filter(tpdf=pdf,time_status=False).order_by('date', 'start_time'))
             split_merged_pdf(merged_pdf,time_count,section_list)
-        # elif section_count < time_count:
-        #     timeslots = TimeSlots.objects.filter(tpdf=pdf,time_status=False).filter(Q(date__gt=now.date()) | Q(date=now.date(), start_time__gte=now.time())).order_by('date', 'start_time')
-        #     merged_pdf = merge_pdfs_in_memory(timeslots)
-        #     section_list = list(timeslots)
-        #     num_splits = timeslots.count()  # Get the count
-        #     if num_splits > 0:  # Ensure it's not zero
-        #         split_merged_pdf(merged_pdf, num_splits, section_list)
-        #     else:
-        #         print("No available TimeSlots with time_status=False to assign split PDFs.")
 
         
 
@@ -166,9 +157,7 @@ def home(request):
             if min_val and min_val.strip():
                 user_settings.min = int(min_val)
 
-            # max_val = request.POST.get('max')
-            # if max_val and max_val.strip():
-            #     user_settings.max = int(max_val)
+            
 
             duration_val = request.POST.get('duration')
             if duration_val and duration_val.strip():
